@@ -97,7 +97,7 @@ const EmployeeManager: React.FC = () => {
         </div>
         <button 
           onClick={() => openModal()}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl transition-all font-bold shadow-lg shadow-blue-100"
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl transition-all font-bold shadow-lg shadow-blue-100 active:scale-95"
         >
           <Plus className="w-5 h-5" /> Add New Staff
         </button>
@@ -110,7 +110,7 @@ const EmployeeManager: React.FC = () => {
             <input 
               type="text" 
               placeholder="Filter by name..."
-              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-700"
+              className="w-full pl-12 pr-4 py-4 bg-white border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-base md:text-sm text-gray-700"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -157,7 +157,7 @@ const EmployeeManager: React.FC = () => {
                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-100 uppercase tracking-tighter">Active</span>
                     </td>
                     <td className="px-8 py-5 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={() => openModal(emp)}
                           className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-100"
@@ -184,7 +184,7 @@ const EmployeeManager: React.FC = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
           <div className="bg-white rounded-[40px] shadow-2xl max-w-md w-full overflow-hidden animate-slide-in">
             <div className="px-10 py-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
               <h3 className="text-2xl font-black text-gray-900 tracking-tight">{editingEmployee ? 'Edit Profile' : 'New Staff member'}</h3>
@@ -198,7 +198,7 @@ const EmployeeManager: React.FC = () => {
                   <input 
                     type="text" 
                     required
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-3xl focus:ring-4 focus:ring-blue-500/10 outline-none font-bold text-gray-800 transition-all"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-3xl focus:ring-4 focus:ring-blue-500/10 outline-none font-bold text-base md:text-sm text-gray-800 transition-all"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="Jane Smith"
@@ -213,7 +213,7 @@ const EmployeeManager: React.FC = () => {
                     type="number" 
                     step="0.01"
                     required
-                    className="w-full pl-8 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-3xl focus:ring-4 focus:ring-blue-500/10 outline-none font-bold text-gray-800 transition-all"
+                    className="w-full pl-8 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-3xl focus:ring-4 focus:ring-blue-500/10 outline-none font-bold text-base md:text-sm text-gray-800 transition-all"
                     value={formData.hourly_rate}
                     onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
                     placeholder="25.00"
@@ -230,7 +230,7 @@ const EmployeeManager: React.FC = () => {
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-100 active:scale-95"
                 >
                   <Check className="w-5 h-5" /> {editingEmployee ? 'Update' : 'Create'}
                 </button>

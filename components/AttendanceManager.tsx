@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Employee, Attendance } from '../types';
-import { Plus, Clock, Trash2, Loader2, Calendar as CalendarIcon, Edit2, X, Check } from 'lucide-react';
+import { Plus, Clock, Trash2, Loader2, Edit2, X, Check } from 'lucide-react';
 
 const AttendanceManager: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -11,7 +11,7 @@ const AttendanceManager: React.FC = () => {
   const [isLogging, setIsLogging] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Attendance | null>(null);
   
-  // Set default times as requested: 2:30 PM (14:30) and 11:00 PM (23:00)
+  // Set default times: 2:30 PM (14:30) and 11:00 PM (23:00)
   const defaultTimeIn = "14:30";
   const defaultTimeOut = "23:00";
 
@@ -79,7 +79,6 @@ const AttendanceManager: React.FC = () => {
     }
 
     if (!editingRecord) {
-      // Reset to defaults after successful log
       setFormData({ 
         employee_id: '', 
         date: new Date().toISOString().split('T')[0],
@@ -125,7 +124,8 @@ const AttendanceManager: React.FC = () => {
     return Math.max(0, diff / (1000 * 60 * 60));
   };
 
-  const inputClasses = "w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold appearance-none transition-all";
+  // Increased font-size to 16px (text-base) for inputs on mobile to prevent auto-zoom
+  const inputClasses = "w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base md:text-sm font-bold appearance-none transition-all";
   const labelClasses = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1";
 
   return (
@@ -140,7 +140,6 @@ const AttendanceManager: React.FC = () => {
           </h2>
           
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Row 1: Employee Selection */}
             <div>
               <label className={labelClasses}>Employee</label>
               <select 
@@ -156,7 +155,6 @@ const AttendanceManager: React.FC = () => {
               </select>
             </div>
 
-            {/* Row 2: Date Selection */}
             <div>
               <label className={labelClasses}>Shift Date</label>
               <input 
@@ -168,7 +166,6 @@ const AttendanceManager: React.FC = () => {
               />
             </div>
 
-            {/* Row 3: In and Out Times (Shared Row) */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClasses}>In (2:30 PM)</label>
@@ -191,12 +188,11 @@ const AttendanceManager: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 4: Submit Button */}
             <div className="pt-2">
               <button 
                 type="submit"
                 disabled={isLogging || !formData.employee_id}
-                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black py-2 rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 text-sm shadow-xl shadow-blue-100"
+                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black py-2 rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 text-sm shadow-xl shadow-blue-100 active:scale-95"
               >
                 {isLogging ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                 LOG SHIFT

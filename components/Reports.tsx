@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Attendance, Employee } from '../types';
-import { Download, FileText, Calendar, Loader2, DollarSign, Clock, User, ArrowLeft, Filter } from 'lucide-react';
+import { Download, FileText, Loader2, DollarSign, Clock, User } from 'lucide-react';
 
 const Reports: React.FC = () => {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -91,30 +91,25 @@ const Reports: React.FC = () => {
   const totalWages = stats.reduce((sum, e) => sum + e.wages, 0);
   const totalHours = stats.reduce((sum, e) => sum + e.hours, 0);
 
-  const filterInputClasses = "w-full h-10 px-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-xs text-gray-700 appearance-none";
-  const filterLabelClasses = "block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1";
+  // Increased font-size to 16px (text-base) for inputs on mobile to prevent auto-zoom
+  const filterInputClasses = "w-full h-12 px-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-base md:text-sm text-gray-700 appearance-none transition-all";
+  const filterLabelClasses = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1";
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" /> Payroll Analytics
           </h2>
         </div>
-        <button 
-          onClick={downloadReport}
-          className="flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-black transition-all shadow-lg"
-        >
-          <Download className="w-4 h-4" /> DOWNLOAD CSV
-        </button>
       </div>
 
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
         <div className="col-span-2 md:col-span-1">
           <label className={filterLabelClasses}>Staff Member</label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <select 
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
@@ -136,82 +131,98 @@ const Reports: React.FC = () => {
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={filterInputClasses} />
         </div>
         <div className="col-span-2 md:col-span-1">
-           <button onClick={fetchData} className="w-full h-10 bg-blue-600 text-white text-[11px] font-black rounded-xl hover:bg-blue-700 transition-colors shadow-md shadow-blue-50">
-             REFRESH
+           <button onClick={fetchData} className="w-full h-12 bg-blue-600 text-white text-[12px] font-black rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50 tracking-wider">
+             REFRESH DATA
            </button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Total Pay</p>
-            <h3 className="text-lg font-black text-gray-900">${totalWages.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Pay</p>
+            <h3 className="text-xl font-black text-gray-900">${totalWages.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
           </div>
-          <DollarSign className="w-5 h-5 text-blue-600 opacity-20" />
+          <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
+            <DollarSign className="w-5 h-5" />
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Hours</p>
-            <h3 className="text-lg font-black text-gray-900">{totalHours.toFixed(1)}h</h3>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hours</p>
+            <h3 className="text-xl font-black text-gray-900">{totalHours.toFixed(1)}h</h3>
           </div>
-          <Clock className="w-5 h-5 text-indigo-600 opacity-20" />
+          <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
+            <Clock className="w-5 h-5" />
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
-          <div className="p-10 flex justify-center"><Loader2 className="w-6 h-6 text-blue-600 animate-spin" /></div>
+          <div className="p-16 flex justify-center"><Loader2 className="w-10 h-10 text-blue-600 animate-spin" /></div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50/50 text-gray-400 text-[9px] uppercase font-bold tracking-widest border-b border-gray-100">
-                  <th className="px-5 py-3">{selectedEmployeeId === 'all' ? 'Name' : 'Date'}</th>
-                  <th className="px-5 py-3 text-center">Shifts</th>
-                  <th className="px-5 py-3 text-center">Hours</th>
-                  <th className="px-5 py-3 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {selectedEmployeeId === 'all' ? (
-                  stats.length === 0 ? (
-                    <tr><td colSpan={4} className="px-5 py-8 text-center text-gray-400 text-xs font-medium">No results found.</td></tr>
-                  ) : (
-                    stats.map((e, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50/50 transition-colors group cursor-pointer" onClick={() => {
-                        const emp = employees.find(emp => emp.name === e.name);
-                        if (emp) setSelectedEmployeeId(emp.id);
-                      }}>
-                        <td className="px-5 py-3 font-bold text-xs text-gray-900">{e.name}</td>
-                        <td className="px-5 py-3 text-center text-[10px] font-semibold text-gray-500">{e.shifts}</td>
-                        <td className="px-5 py-3 text-center text-xs font-bold text-gray-600">{e.hours.toFixed(1)}h</td>
-                        <td className="px-5 py-3 text-right font-black text-sm text-gray-900">${e.wages.toFixed(2)}</td>
-                      </tr>
-                    ))
-                  )
-                ) : (
-                  attendance.length === 0 ? (
-                    <tr><td colSpan={4} className="px-5 py-8 text-center text-gray-400 text-xs font-medium">No shifts recorded.</td></tr>
-                  ) : (
-                    attendance.map((att, idx) => {
-                      const diff = att.time_out ? (new Date(att.time_out).getTime() - new Date(att.time_in).getTime()) : 0;
-                      const hrs = Math.max(0, diff / (1000 * 60 * 60));
-                      const pay = hrs * (att.employee?.hourly_rate || 0);
-                      return (
-                        <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-5 py-3 text-xs font-bold text-gray-700">{new Date(att.date).toLocaleDateString([], {month: 'short', day: 'numeric'})}</td>
-                          <td className="px-5 py-3 text-center text-[9px] text-gray-400 uppercase font-bold">Shift</td>
-                          <td className="px-5 py-3 text-center text-xs font-bold text-gray-600">{hrs.toFixed(1)}h</td>
-                          <td className="px-5 py-3 text-right font-black text-sm text-gray-900">${pay.toFixed(2)}</td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-100">
+                    <th className="px-6 py-4">{selectedEmployeeId === 'all' ? 'Name' : 'Date'}</th>
+                    <th className="px-6 py-4 text-center">Shifts</th>
+                    <th className="px-6 py-4 text-center">Hours</th>
+                    <th className="px-6 py-4 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {selectedEmployeeId === 'all' ? (
+                    stats.length === 0 ? (
+                      <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-sm font-bold">No results found for this period.</td></tr>
+                    ) : (
+                      stats.map((e, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50/50 transition-colors group cursor-pointer" onClick={() => {
+                          const emp = employees.find(emp => emp.name === e.name);
+                          if (emp) setSelectedEmployeeId(emp.id);
+                        }}>
+                          <td className="px-6 py-4 font-black text-sm text-gray-900">{e.name}</td>
+                          <td className="px-6 py-4 text-center text-[11px] font-bold text-gray-500">{e.shifts}</td>
+                          <td className="px-6 py-4 text-center text-sm font-bold text-gray-600">{e.hours.toFixed(1)}h</td>
+                          <td className="px-6 py-4 text-right font-black text-base text-gray-900">${e.wages.toFixed(2)}</td>
                         </tr>
-                      );
-                    })
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
+                      ))
+                    )
+                  ) : (
+                    attendance.length === 0 ? (
+                      <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-sm font-bold">No shifts recorded for this staff member.</td></tr>
+                    ) : (
+                      attendance.map((att, idx) => {
+                        const diff = att.time_out ? (new Date(att.time_out).getTime() - new Date(att.time_in).getTime()) : 0;
+                        const hrs = Math.max(0, diff / (1000 * 60 * 60));
+                        const pay = hrs * (att.employee?.hourly_rate || 0);
+                        return (
+                          <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-6 py-4 text-sm font-black text-gray-800">{new Date(att.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'})}</td>
+                            <td className="px-6 py-4 text-center text-[10px] text-gray-400 uppercase font-black">Shift Done</td>
+                            <td className="px-6 py-4 text-center text-sm font-bold text-gray-600">{hrs.toFixed(1)}h</td>
+                            <td className="px-6 py-4 text-right font-black text-base text-gray-900">${pay.toFixed(2)}</td>
+                          </tr>
+                        );
+                      })
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Download Button moved to bottom of table area */}
+            <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-center">
+              <button 
+                onClick={downloadReport}
+                className="flex items-center justify-center gap-3 bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-2xl text-sm font-black transition-all shadow-xl shadow-gray-200 active:scale-95"
+              >
+                <Download className="w-5 h-5" /> DOWNLOAD CSV REPORT
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
