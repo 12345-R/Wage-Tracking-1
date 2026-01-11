@@ -1,0 +1,5 @@
+{
+  "name": "WageTrack Pro",
+  "description": "A production-ready wage and attendance tracker for employers to manage employees, log hours, and calculate payroll with real-time Supabase synchronization.",
+  "requestFramePermissions": []
+}
