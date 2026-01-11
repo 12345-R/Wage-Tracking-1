@@ -6,9 +6,10 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import EmployeeManager from './components/EmployeeManager';
 import AttendanceManager from './components/AttendanceManager';
+import Reports from './components/Reports';
 import { Loader2, AlertTriangle, ExternalLink } from 'lucide-react';
 
-type Tab = 'dashboard' | 'employees' | 'attendance';
+export type Tab = 'dashboard' | 'employees' | 'attendance' | 'reports';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -21,13 +22,11 @@ const App: React.FC = () => {
       return;
     }
 
-    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
@@ -49,26 +48,7 @@ const App: React.FC = () => {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Configuration Required</h2>
-          <p className="text-gray-600 mb-8">
-            The Supabase environment variables are missing. Please configure 
-            <code className="mx-1 px-2 py-1 bg-gray-100 rounded text-sm text-red-600">NEXT_PUBLIC_SUPABASE_URL</code> 
-            and 
-            <code className="mx-1 px-2 py-1 bg-gray-100 rounded text-sm text-red-600">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> 
-            in your environment settings.
-          </p>
-          <div className="space-y-3">
-            <a 
-              href="https://supabase.com/dashboard" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors"
-            >
-              Get Keys from Supabase <ExternalLink className="w-4 h-4" />
-            </a>
-            <p className="text-xs text-gray-400">
-              Once set, refresh the page to start managing your wages.
-            </p>
-          </div>
+          <p className="text-gray-600 mb-8">Supabase variables are missing.</p>
         </div>
       </div>
     );
@@ -97,6 +77,8 @@ const App: React.FC = () => {
         return <EmployeeManager />;
       case 'attendance':
         return <AttendanceManager />;
+      case 'reports':
+        return <Reports />;
       default:
         return <Dashboard />;
     }

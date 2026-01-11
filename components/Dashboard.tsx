@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Attendance, WageSummary } from '../types';
-import { DollarSign, Clock, Users, Calendar, TrendingUp } from 'lucide-react';
+import { Attendance } from '../types';
+import { DollarSign, Clock, Users, Calendar, TrendingUp, ArrowUpRight, ChevronRight } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -20,7 +20,6 @@ const Dashboard: React.FC = () => {
 
   const fetchStats = async () => {
     setLoading(true);
-    // Fetch last 31 days of attendance for stats
     const monthAgo = new Date();
     monthAgo.setDate(monthAgo.getDate() - 31);
 
@@ -37,8 +36,6 @@ const Dashboard: React.FC = () => {
 
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
-      
-      // Weekly range (Last 7 days)
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       const weekStr = weekAgo.toISOString().split('T')[0];
@@ -49,26 +46,13 @@ const Dashboard: React.FC = () => {
 
       data.forEach(record => {
         if (!record.time_out || !record.employee) return;
-        
         const diff = new Date(record.time_out).getTime() - new Date(record.time_in).getTime();
         const hours = Math.max(0, diff / (1000 * 60 * 60));
         const wages = hours * record.employee.hourly_rate;
 
-        // Daily
-        if (record.date === todayStr) {
-          dHours += hours;
-          dWages += wages;
-        }
-
-        // Weekly
-        if (record.date >= weekStr) {
-          wHours += hours;
-          wWages += wages;
-        }
-
-        // Monthly (already filtered in query)
-        mHours += hours;
-        mWages += wages;
+        if (record.date === todayStr) { dHours += hours; dWages += wages; }
+        if (record.date >= weekStr) { wHours += hours; wWages += wages; }
+        mHours += hours; mWages += wages;
       });
 
       setStats({
@@ -81,72 +65,87 @@ const Dashboard: React.FC = () => {
     setLoading(false);
   };
 
-  const StatCard = ({ title, wages, hours, icon: Icon, color }: any) => (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-gray-500 font-medium text-sm">{title}</span>
-        <div className={`p-2 rounded-lg ${color}`}>
-          <Icon className="w-5 h-5" />
+  const MainStat = ({ title, wages, hours, gradient, icon: Icon }: any) => (
+    <div className={`relative overflow-hidden rounded-3xl p-6 text-white shadow-xl ${gradient} transition-transform hover:scale-[1.02]`}>
+      <div className="relative z-10 flex flex-col h-full justify-between">
+        <div className="flex justify-between items-start">
+          <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl">
+            <Icon className="w-6 h-6" />
+          </div>
+          <ArrowUpRight className="w-5 h-5 opacity-50" />
+        </div>
+        <div className="mt-8">
+          <p className="text-white/80 text-sm font-medium uppercase tracking-wider">{title}</p>
+          <h3 className="text-3xl font-bold mt-1">${wages.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+          <div className="flex items-center gap-1 mt-2 text-white/70 text-sm">
+            <Clock className="w-4 h-4" />
+            <span>{hours.toFixed(1)} Total Hours</span>
+          </div>
         </div>
       </div>
-      <div className="space-y-1">
-        <h4 className="text-2xl font-bold text-gray-900">${wages.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h4>
-        <div className="flex items-center gap-1 text-sm text-gray-500">
-          <Clock className="w-4 h-4" />
-          <span>{hours.toFixed(1)} hours worked</span>
-        </div>
-      </div>
+      {/* Abstract Background Element */}
+      <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+    </div>
+  );
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
     </div>
   );
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
-        <p className="text-gray-500">Real-time metrics for your workforce and payroll.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Daily Total" 
-          wages={stats.daily.totalWages} 
-          hours={stats.daily.totalHours} 
-          icon={Calendar} 
-          color="bg-orange-50 text-orange-600"
-        />
-        <StatCard 
-          title="Weekly Total" 
-          wages={stats.weekly.totalWages} 
-          hours={stats.weekly.totalHours} 
-          icon={TrendingUp} 
-          color="bg-green-50 text-green-600"
-        />
-        <StatCard 
-          title="Monthly Total" 
-          wages={stats.monthly.totalWages} 
-          hours={stats.monthly.totalHours} 
-          icon={DollarSign} 
-          color="bg-blue-50 text-blue-600"
-        />
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">{stats.totalEmployees}</div>
-              <div className="text-sm text-gray-500">Active Employees</div>
-            </div>
-          </div>
+    <div className="space-y-10 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Executive Summary</h1>
+          <p className="text-gray-500 font-medium">Overview of wages and productivity metrics.</p>
+        </div>
+        <div className="flex items-center gap-4 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+           <div className="flex -space-x-2">
+             {[1,2,3].map(i => (
+               <div key={i} className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-500">U{i}</div>
+             ))}
+           </div>
+           <div className="text-sm font-semibold pr-4">
+             {stats.totalEmployees} Team Members
+           </div>
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <MainStat 
+          title="Daily Payroll" 
+          wages={stats.daily.totalWages} 
+          hours={stats.daily.totalHours} 
+          gradient="bg-gradient-to-br from-orange-400 to-rose-500" 
+          icon={Calendar} 
+        />
+        <MainStat 
+          title="Weekly Volume" 
+          wages={stats.weekly.totalWages} 
+          hours={stats.weekly.totalHours} 
+          gradient="bg-gradient-to-br from-blue-500 to-indigo-600" 
+          icon={TrendingUp} 
+        />
+        <MainStat 
+          title="Monthly Outlook" 
+          wages={stats.monthly.totalWages} 
+          hours={stats.monthly.totalHours} 
+          gradient="bg-gradient-to-br from-emerald-400 to-teal-600" 
+          icon={DollarSign} 
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Employee Performance (Monthly)</h3>
-          <div className="space-y-4">
+        <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-bold text-gray-900">Top Earners</h2>
+            <button className="text-blue-600 text-sm font-bold flex items-center hover:underline">View All <ChevronRight className="w-4 h-4" /></button>
+          </div>
+          <div className="space-y-6">
             {attendance.length === 0 ? (
-               <p className="text-gray-400 text-sm">No data available for performance tracking.</p>
+               <div className="text-center py-10 text-gray-400">No shift data found</div>
             ) : (
               Object.values(
                 attendance.reduce((acc: any, curr) => {
@@ -159,45 +158,50 @@ const Dashboard: React.FC = () => {
                   acc[id].wages += hrs * curr.employee.hourly_rate;
                   return acc;
                 }, {})
-              ).sort((a: any, b: any) => b.wages - a.wages).slice(0, 5).map((e: any) => (
-                <div key={e.name} className="flex items-center justify-between group">
-                  <div>
-                    <div className="font-medium text-gray-900">{e.name}</div>
-                    <div className="text-xs text-gray-400">{e.hours.toFixed(1)} hrs worked</div>
+              ).sort((a: any, b: any) => b.wages - a.wages).slice(0, 4).map((e: any, idx: number) => (
+                <div key={idx} className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center font-bold text-gray-400 border border-gray-100">
+                    {e.name.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-gray-900">{e.name}</h4>
+                    <p className="text-xs text-gray-500 font-medium">{e.hours.toFixed(1)}h logged</p>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-gray-900">${e.wages.toFixed(2)}</div>
-                    <div className="h-1.5 w-24 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500" 
-                        style={{ width: `${Math.min(100, (e.wages / stats.monthly.totalWages) * 100)}%` }}
-                      ></div>
+                    <div className="font-black text-gray-900">${e.wages.toFixed(2)}</div>
+                    <div className="w-24 h-1.5 bg-gray-50 rounded-full mt-1 overflow-hidden">
+                       <div className="h-full bg-blue-500" style={{width: `${Math.min(100, (e.wages / stats.monthly.totalWages) * 100)}%`}}></div>
                     </div>
                   </div>
                 </div>
               ))
             )}
           </div>
-        </div>
+        </section>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="space-y-4">
-            {attendance.slice(0, 5).map((record, i) => (
-              <div key={i} className="flex items-center gap-3 text-sm">
-                <div className={`w-2 h-2 rounded-full ${record.time_out ? 'bg-green-400' : 'bg-orange-400'}`}></div>
-                <span className="font-medium text-gray-700">{record.employee?.name}</span>
-                <span className="text-gray-500">
-                  {record.time_out ? 'completed a shift' : 'started shift'}
-                </span>
-                <span className="ml-auto text-gray-400 text-xs">
-                  {new Date(record.time_in).toLocaleDateString()}
-                </span>
+        <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Activity</h2>
+          <div className="space-y-4 flex-1">
+            {attendance.slice(0, 6).map((record, i) => (
+              <div key={i} className="flex items-start gap-4 p-3 rounded-2xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+                <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${record.time_out ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-orange-500 shadow-sm shadow-orange-200 animate-pulse'}`}></div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <p className="text-sm font-bold text-gray-900">{record.employee?.name}</p>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{new Date(record.date).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {record.time_out 
+                      ? `Completed shift: ${new Date(record.time_in).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${new Date(record.time_out).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}` 
+                      : `Currently clocked in since ${new Date(record.time_in).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`}
+                  </p>
+                </div>
               </div>
             ))}
-            {attendance.length === 0 && <p className="text-gray-400 text-sm">No recent activity.</p>}
+            {attendance.length === 0 && <p className="text-gray-400 text-center py-10">No recent logs</p>}
           </div>
-        </div>
+          <button className="mt-6 w-full py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl hover:bg-gray-100 transition-colors">View All Logs</button>
+        </section>
       </div>
     </div>
   );
