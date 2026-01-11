@@ -125,19 +125,23 @@ const AttendanceManager: React.FC = () => {
     return Math.max(0, diff / (1000 * 60 * 60));
   };
 
-  const inputClasses = "w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xs font-semibold appearance-none";
-  const labelClasses = "block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1";
+  const inputClasses = "w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold appearance-none transition-all";
+  const labelClasses = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1";
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {!editingRecord && (
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-          <h2 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-widest">
-            <Clock className="w-4 h-4 text-blue-600" /> Log Shift
+        <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
+          <h2 className="text-sm font-black text-gray-900 mb-6 flex items-center gap-2 uppercase tracking-widest">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Clock className="w-4 h-4 text-blue-600" />
+            </div>
+            Log Shift
           </h2>
           
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
-            <div className="col-span-2 md:col-span-1">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Row 1: Employee Selection */}
+            <div>
               <label className={labelClasses}>Employee</label>
               <select 
                 required
@@ -145,14 +149,16 @@ const AttendanceManager: React.FC = () => {
                 value={formData.employee_id}
                 onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
               >
-                <option value="">Select...</option>
+                <option value="">Select Employee...</option>
                 {employees.map(emp => (
                   <option key={emp.id} value={emp.id}>{emp.name}</option>
                 ))}
               </select>
             </div>
+
+            {/* Row 2: Date Selection */}
             <div>
-              <label className={labelClasses}>Date</label>
+              <label className={labelClasses}>Shift Date</label>
               <input 
                 type="date"
                 required
@@ -161,33 +167,39 @@ const AttendanceManager: React.FC = () => {
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
               />
             </div>
-            <div>
-              <label className={labelClasses}>In (2:30 PM)</label>
-              <input 
-                type="time"
-                required
-                className={inputClasses}
-                value={formData.time_in}
-                onChange={(e) => setFormData({...formData, time_in: e.target.value})}
-              />
+
+            {/* Row 3: In and Out Times (Shared Row) */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelClasses}>In (2:30 PM)</label>
+                <input 
+                  type="time"
+                  required
+                  className={inputClasses}
+                  value={formData.time_in}
+                  onChange={(e) => setFormData({...formData, time_in: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className={labelClasses}>Out (11:00 PM)</label>
+                <input 
+                  type="time"
+                  className={inputClasses}
+                  value={formData.time_out}
+                  onChange={(e) => setFormData({...formData, time_out: e.target.value})}
+                />
+              </div>
             </div>
-            <div>
-              <label className={labelClasses}>Out (11:00 PM)</label>
-              <input 
-                type="time"
-                className={inputClasses}
-                value={formData.time_out}
-                onChange={(e) => setFormData({...formData, time_out: e.target.value})}
-              />
-            </div>
-            <div className="col-span-2 md:col-span-1">
+
+            {/* Row 4: Submit Button */}
+            <div className="pt-2">
               <button 
                 type="submit"
                 disabled={isLogging || !formData.employee_id}
-                className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-xs shadow-md shadow-blue-100"
+                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black py-2 rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 text-sm shadow-xl shadow-blue-100"
               >
-                {isLogging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Log
+                {isLogging ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                LOG SHIFT
               </button>
             </div>
           </form>
@@ -197,12 +209,12 @@ const AttendanceManager: React.FC = () => {
       {/* Editing Modal Overlay */}
       {editingRecord && (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6 animate-slide-in shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm font-black text-gray-900 uppercase tracking-tight">Edit Shift</h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+          <div className="bg-white rounded-[40px] w-full max-w-sm p-8 animate-slide-in shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Edit Shift</h2>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-50 transition-colors"><X className="w-6 h-6" /></button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className={labelClasses}>Employee</label>
                 <select 
@@ -216,24 +228,24 @@ const AttendanceManager: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClasses}>Date</label>
-                  <input type="date" required className={inputClasses} value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
-                </div>
+              <div>
+                <label className={labelClasses}>Date</label>
+                <input type="date" required className={inputClasses} value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClasses}>In Time</label>
                   <input type="time" required className={inputClasses} value={formData.time_in} onChange={(e) => setFormData({...formData, time_in: e.target.value})} />
                 </div>
+                <div>
+                  <label className={labelClasses}>Out Time</label>
+                  <input type="time" className={inputClasses} value={formData.time_out} onChange={(e) => setFormData({...formData, time_out: e.target.value})} />
+                </div>
               </div>
-              <div>
-                <label className={labelClasses}>Out Time (Optional)</label>
-                <input type="time" className={inputClasses} value={formData.time_out} onChange={(e) => setFormData({...formData, time_out: e.target.value})} />
-              </div>
-              <div className="flex gap-2 pt-3">
-                <button type="button" onClick={closeModal} className="flex-1 h-10 bg-gray-100 text-gray-600 font-bold rounded-xl text-xs hover:bg-gray-200 transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 h-10 bg-blue-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50">
-                   <Check className="w-3 h-3" /> Update
+              <div className="flex gap-4 pt-4">
+                <button type="button" onClick={closeModal} className="flex-1 h-12 bg-gray-100 text-gray-600 font-bold rounded-2xl text-xs hover:bg-gray-200 transition-colors">Cancel</button>
+                <button type="submit" className="flex-1 h-12 bg-blue-600 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50">
+                   <Check className="w-4 h-4" /> UPDATE
                 </button>
               </div>
             </form>
@@ -241,46 +253,46 @@ const AttendanceManager: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50/20">
-          <h3 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest">History</h3>
+      <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/20">
+          <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Shift Logs</h3>
         </div>
 
         {loading ? (
-          <div className="p-10 flex justify-center"><Loader2 className="w-6 h-6 text-blue-600 animate-spin" /></div>
+          <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-gray-50/50 text-gray-400 text-[9px] uppercase font-bold tracking-widest border-b border-gray-100">
-                  <th className="px-4 py-2.5">Staff</th>
-                  <th className="px-4 py-2.5">Date</th>
-                  <th className="px-4 py-2.5">Hours</th>
-                  <th className="px-4 py-2.5 text-right">Action</th>
+                <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-100">
+                  <th className="px-6 py-4">Staff</th>
+                  <th className="px-6 py-4 text-center">Date</th>
+                  <th className="px-6 py-4 text-center">Hours</th>
+                  <th className="px-6 py-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {attendance.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-xs">No records.</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-xs font-bold">No records found.</td></tr>
                 ) : (
                   attendance.map((record) => {
                     const hours = calculateHours(record.time_in, record.time_out);
                     return (
                       <tr key={record.id} className="hover:bg-gray-50/50 transition-colors group">
-                        <td className="px-4 py-3">
-                          <div className="text-xs font-bold text-gray-900 truncate max-w-[80px] md:max-w-none">{record.employee?.name || '---'}</div>
-                          <div className="text-[9px] text-gray-400 font-medium">${record.employee?.hourly_rate}/h</div>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-black text-gray-900 truncate max-w-[120px] md:max-w-none">{record.employee?.name || '---'}</div>
+                          <div className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">${record.employee?.hourly_rate}/h</div>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="text-[10px] font-semibold text-gray-600">{new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric'})}</div>
+                        <td className="px-6 py-4 text-center">
+                          <div className="text-[11px] font-bold text-gray-600">{new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric'})}</div>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className="text-xs font-black text-gray-900">{hours.toFixed(1)}h</span>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-sm font-black text-gray-900">{hours.toFixed(1)}h</span>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-0.5">
-                            <button onClick={() => openEdit(record)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Shift"><Edit2 className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => handleDelete(record.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete Shift"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => openEdit(record)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors" title="Edit Shift"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => handleDelete(record.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors" title="Delete Shift"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </td>
                       </tr>
