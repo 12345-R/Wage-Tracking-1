@@ -49,9 +49,9 @@ const AttendanceManager: React.FC = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Convert local time strings to ISO format for storage
-    const timeIn = new Date(`${formData.date}T${formData.time_in}`).toISOString();
-    const timeOut = formData.time_out ? new Date(`${formData.date}T${formData.time_out}`).toISOString() : null;
+    // Send only the time string (HH:mm) as the database column type is TIME
+    const timeIn = formData.time_in;
+    const timeOut = formData.time_out || null;
 
     if (editingRecord) {
       const { error } = await supabase
@@ -92,11 +92,17 @@ const AttendanceManager: React.FC = () => {
 
   const openEdit = (record: Attendance) => {
     setEditingRecord(record);
+    // Databases usually return TIME as HH:mm:ss, we only need HH:mm for the input
+    const parseTime = (timeStr: string | null) => {
+      if (!timeStr) return '';
+      return timeStr.slice(0, 5);
+    };
+    
     setFormData({
       employee_id: record.employee_id,
       date: record.date,
-      time_in: new Date(record.time_in).toTimeString().slice(0, 5),
-      time_out: record.time_out ? new Date(record.time_out).toTimeString().slice(0, 5) : ''
+      time_in: parseTime(record.time_in),
+      time_out: parseTime(record.time_out)
     });
   };
 
@@ -118,13 +124,21 @@ const AttendanceManager: React.FC = () => {
     }
   };
 
-  const calculateHours = (start: string, end: string | null) => {
+  const calculateHours = (date: string, start: string, end: string | null) => {
     if (!end) return 0;
-    const diff = new Date(end).getTime() - new Date(start).getTime();
+    const startTime = new Date(`${date}T${start}`);
+    const endTime = new Date(`${date}T${end}`);
+    
+    // Handle overnight shifts if end time is before start time
+    let diff = endTime.getTime() - startTime.getTime();
+    if (diff < 0) {
+      // Add 24 hours in milliseconds
+      diff += 24 * 60 * 60 * 1000;
+    }
+    
     return Math.max(0, diff / (1000 * 60 * 60));
   };
 
-  // Increased font-size to 16px (text-base) for inputs on mobile to prevent auto-zoom
   const inputClasses = "w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base md:text-sm font-bold appearance-none transition-all";
   const labelClasses = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1";
 
@@ -202,7 +216,6 @@ const AttendanceManager: React.FC = () => {
         </div>
       )}
 
-      {/* Editing Modal Overlay */}
       {editingRecord && (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-[40px] w-full max-w-sm p-8 animate-slide-in shadow-2xl">
@@ -272,7 +285,7 @@ const AttendanceManager: React.FC = () => {
                   <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-xs font-bold">No records found.</td></tr>
                 ) : (
                   attendance.map((record) => {
-                    const hours = calculateHours(record.time_in, record.time_out);
+                    const hours = calculateHours(record.date, record.time_in, record.time_out);
                     return (
                       <tr key={record.id} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-6 py-4">
@@ -280,7 +293,7 @@ const AttendanceManager: React.FC = () => {
                           <div className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">${record.employee?.hourly_rate}/h</div>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <div className="text-[11px] font-bold text-gray-600">{new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric'})}</div>
+                          <div className="text-[11px] font-bold text-gray-600">{new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}</div>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className="text-sm font-black text-gray-900">{hours.toFixed(1)}h</span>

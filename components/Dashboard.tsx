@@ -18,6 +18,15 @@ const Dashboard: React.FC = () => {
     fetchStats();
   }, []);
 
+  const calculateHours = (date: string, start: string, end: string | null) => {
+    if (!end) return 0;
+    const startTime = new Date(`${date}T${start}`);
+    const endTime = new Date(`${date}T${end}`);
+    let diff = endTime.getTime() - startTime.getTime();
+    if (diff < 0) diff += 24 * 60 * 60 * 1000;
+    return Math.max(0, diff / (1000 * 60 * 60));
+  };
+
   const fetchStats = async () => {
     setLoading(true);
     const monthAgo = new Date();
@@ -46,8 +55,7 @@ const Dashboard: React.FC = () => {
 
       data.forEach(record => {
         if (!record.time_out || !record.employee) return;
-        const diff = new Date(record.time_out).getTime() - new Date(record.time_in).getTime();
-        const hours = Math.max(0, diff / (1000 * 60 * 60));
+        const hours = calculateHours(record.date, record.time_in, record.time_out);
         const wages = hours * record.employee.hourly_rate;
 
         if (record.date === todayStr) { dHours += hours; dWages += wages; }
@@ -97,7 +105,7 @@ const Dashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Summary</h1>
-          <p className="text-xs text-gray-500 font-medium">Real-time wage metrics.</p>
+          <p className="text-xs text-gray-500 font-medium">Real-time wage metrics (CAD).</p>
         </div>
         <div className="flex items-center gap-3 bg-white p-1.5 rounded-xl shadow-sm border border-gray-100 self-start">
            <div className="flex -space-x-1.5">
@@ -112,34 +120,16 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MainStat 
-          title="Daily Payroll" 
-          wages={stats.daily.totalWages} 
-          hours={stats.daily.totalHours} 
-          gradient="bg-gradient-to-br from-orange-400 to-rose-500" 
-          icon={Calendar} 
-        />
-        <MainStat 
-          title="Weekly Volume" 
-          wages={stats.weekly.totalWages} 
-          hours={stats.weekly.totalHours} 
-          gradient="bg-gradient-to-br from-blue-500 to-indigo-600" 
-          icon={TrendingUp} 
-        />
-        <MainStat 
-          title="Monthly Outlook" 
-          wages={stats.monthly.totalWages} 
-          hours={stats.monthly.totalHours} 
-          gradient="bg-gradient-to-br from-emerald-400 to-teal-600" 
-          icon={DollarSign} 
-        />
+        <MainStat title="Daily Payroll" wages={stats.daily.totalWages} hours={stats.daily.totalHours} gradient="bg-gradient-to-br from-orange-400 to-rose-500" icon={Calendar} />
+        <MainStat title="Weekly Volume" wages={stats.weekly.totalWages} hours={stats.weekly.totalHours} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" icon={TrendingUp} />
+        <MainStat title="Monthly Outlook" wages={stats.monthly.totalWages} hours={stats.monthly.totalHours} gradient="bg-gradient-to-br from-emerald-400 to-teal-600" icon={DollarSign} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-base font-bold text-gray-900">Top Earners</h2>
-            <button className="text-blue-600 text-[11px] font-bold flex items-center hover:underline">Full Report <ChevronRight className="w-3 h-3" /></button>
+            <button className="text-blue-600 text-[11px] font-bold flex items-center hover:underline">View Analytics</button>
           </div>
           <div className="space-y-4">
             {attendance.length === 0 ? (
@@ -150,8 +140,7 @@ const Dashboard: React.FC = () => {
                   if (!curr.employee) return acc;
                   const id = curr.employee_id;
                   if (!acc[id]) acc[id] = { name: curr.employee.name, hours: 0, wages: 0 };
-                  const diff = curr.time_out ? (new Date(curr.time_out).getTime() - new Date(curr.time_in).getTime()) : 0;
-                  const hrs = Math.max(0, diff / (1000 * 60 * 60));
+                  const hrs = calculateHours(curr.date, curr.time_in, curr.time_out);
                   acc[id].hours += hrs;
                   acc[id].wages += hrs * curr.employee.hourly_rate;
                   return acc;
@@ -178,7 +167,7 @@ const Dashboard: React.FC = () => {
         </section>
 
         <section className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
-          <h2 className="text-base font-bold text-gray-900 mb-4">Recent Shifts</h2>
+          <h2 className="text-base font-bold text-gray-900 mb-4">Recent Activity</h2>
           <div className="space-y-3 flex-1">
             {attendance.slice(0, 5).map((record, i) => (
               <div key={i} className="flex items-start gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors border border-transparent">
@@ -186,12 +175,12 @@ const Dashboard: React.FC = () => {
                 <div className="flex-1 overflow-hidden">
                   <div className="flex justify-between items-start">
                     <p className="text-xs font-bold text-gray-900 truncate">{record.employee?.name}</p>
-                    <span className="text-[9px] font-bold text-gray-400 uppercase">{new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric'})}</span>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase">{new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric', timeZone: 'UTC'})}</span>
                   </div>
                   <p className="text-[10px] text-gray-500 mt-0.5 truncate">
                     {record.time_out 
-                      ? `${new Date(record.time_in).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${new Date(record.time_out).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}` 
-                      : `Clocked in at ${new Date(record.time_in).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`}
+                      ? `${record.time_in.slice(0, 5)} - ${record.time_out.slice(0, 5)}` 
+                      : `In since ${record.time_in.slice(0, 5)}`}
                   </p>
                 </div>
               </div>

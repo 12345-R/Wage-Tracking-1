@@ -39,13 +39,21 @@ const Reports: React.FC = () => {
     setLoading(false);
   };
 
+  const calculateHours = (date: string, start: string, end: string | null) => {
+    if (!end) return 0;
+    const startTime = new Date(`${date}T${start}`);
+    const endTime = new Date(`${date}T${end}`);
+    let diff = endTime.getTime() - startTime.getTime();
+    if (diff < 0) diff += 24 * 60 * 60 * 1000;
+    return Math.max(0, diff / (1000 * 60 * 60));
+  };
+
   const getSummary = () => {
     const summaryMap: Record<string, { name: string, rate: number, hours: number, wages: number, shifts: number }> = {};
     attendance.forEach(record => {
       if (!record.employee || !record.time_out) return;
       const id = record.employee_id;
-      const diff = new Date(record.time_out).getTime() - new Date(record.time_in).getTime();
-      const hrs = Math.max(0, diff / (1000 * 60 * 60));
+      const hrs = calculateHours(record.date, record.time_in, record.time_out);
       const pay = hrs * record.employee.hourly_rate;
 
       if (!summaryMap[id]) {
@@ -62,19 +70,18 @@ const Reports: React.FC = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     
     if (selectedEmployeeId === 'all') {
-      csvContent += "Employee Name,Total Shifts,Total Hours,Total Pay\n";
+      csvContent += "Employee Name,Total Shifts,Total Hours,Total Pay (CAD)\n";
       stats.forEach(e => {
         csvContent += `${e.name},${e.shifts},${e.hours.toFixed(2)},${e.wages.toFixed(2)}\n`;
       });
     } else {
       const emp = employees.find(e => e.id === selectedEmployeeId);
       csvContent += `Report for: ${emp?.name || 'Unknown'}\n`;
-      csvContent += "Date,Hours,Pay\n";
+      csvContent += "Date,In,Out,Hours,Pay (CAD)\n";
       attendance.forEach(att => {
-        const diff = att.time_out ? (new Date(att.time_out).getTime() - new Date(att.time_in).getTime()) : 0;
-        const hrs = Math.max(0, diff / (1000 * 60 * 60));
+        const hrs = calculateHours(att.date, att.time_in, att.time_out);
         const pay = hrs * (att.employee?.hourly_rate || 0);
-        csvContent += `${att.date},${hrs.toFixed(2)},${pay.toFixed(2)}\n`;
+        csvContent += `${att.date},${att.time_in},${att.time_out || '--'},${hrs.toFixed(2)},${pay.toFixed(2)}\n`;
       });
     }
 
@@ -91,7 +98,6 @@ const Reports: React.FC = () => {
   const totalWages = stats.reduce((sum, e) => sum + e.wages, 0);
   const totalHours = stats.reduce((sum, e) => sum + e.hours, 0);
 
-  // Increased font-size to 16px (text-base) for inputs on mobile to prevent auto-zoom
   const filterInputClasses = "w-full h-12 px-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-base md:text-sm text-gray-700 appearance-none transition-all";
   const filterLabelClasses = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1";
 
@@ -100,7 +106,7 @@ const Reports: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" /> Payroll Analytics
+            <FileText className="w-5 h-5 text-blue-600" /> Payroll Analytics (CAD)
           </h2>
         </div>
       </div>
@@ -110,11 +116,7 @@ const Reports: React.FC = () => {
           <label className={filterLabelClasses}>Staff Member</label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <select 
-              value={selectedEmployeeId}
-              onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className={`${filterInputClasses} pl-9`}
-            >
+            <select value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value)} className={`${filterInputClasses} pl-9`}>
               <option value="all">Everyone</option>
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.name}</option>
@@ -132,7 +134,7 @@ const Reports: React.FC = () => {
         </div>
         <div className="col-span-2 md:col-span-1">
            <button onClick={fetchData} className="w-full h-12 bg-blue-600 text-white text-[12px] font-black rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50 tracking-wider">
-             REFRESH DATA
+             REFRESH
            </button>
         </div>
       </div>
@@ -192,16 +194,15 @@ const Reports: React.FC = () => {
                     )
                   ) : (
                     attendance.length === 0 ? (
-                      <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-sm font-bold">No shifts recorded for this staff member.</td></tr>
+                      <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-sm font-bold">No shifts recorded.</td></tr>
                     ) : (
                       attendance.map((att, idx) => {
-                        const diff = att.time_out ? (new Date(att.time_out).getTime() - new Date(att.time_in).getTime()) : 0;
-                        const hrs = Math.max(0, diff / (1000 * 60 * 60));
+                        const hrs = calculateHours(att.date, att.time_in, att.time_out);
                         const pay = hrs * (att.employee?.hourly_rate || 0);
                         return (
                           <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-6 py-4 text-sm font-black text-gray-800">{new Date(att.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'})}</td>
-                            <td className="px-6 py-4 text-center text-[10px] text-gray-400 uppercase font-black">Shift Done</td>
+                            <td className="px-6 py-4 text-sm font-black text-gray-800">{new Date(att.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}</td>
+                            <td className="px-6 py-4 text-center text-[10px] text-gray-400 uppercase font-black">Logged</td>
                             <td className="px-6 py-4 text-center text-sm font-bold text-gray-600">{hrs.toFixed(1)}h</td>
                             <td className="px-6 py-4 text-right font-black text-base text-gray-900">${pay.toFixed(2)}</td>
                           </tr>
@@ -212,13 +213,8 @@ const Reports: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            
-            {/* Download Button moved to bottom of table area */}
             <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-center">
-              <button 
-                onClick={downloadReport}
-                className="flex items-center justify-center gap-3 bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-2xl text-sm font-black transition-all shadow-xl shadow-gray-200 active:scale-95"
-              >
+              <button onClick={downloadReport} className="flex items-center justify-center gap-3 bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-2xl text-sm font-black transition-all shadow-xl shadow-gray-200 active:scale-95">
                 <Download className="w-5 h-5" /> DOWNLOAD CSV REPORT
               </button>
             </div>
