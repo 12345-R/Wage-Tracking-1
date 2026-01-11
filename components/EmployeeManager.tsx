@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
-import { Plus, Edit2, Trash2, X, Check, Search, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Check, Search, Loader2, User } from 'lucide-react';
 
 const EmployeeManager: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -89,28 +89,28 @@ const EmployeeManager: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Manage Employees</h2>
-          <p className="text-gray-500">Add, edit or remove staff members from your payroll.</p>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tight">Team Roster</h2>
+          <p className="text-gray-500 font-medium">Manage personnel profiles and wage rates.</p>
         </div>
         <button 
           onClick={() => openModal()}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl transition-all font-bold shadow-lg shadow-blue-100"
         >
-          <Plus className="w-5 h-5" /> Add Employee
+          <Plus className="w-5 h-5" /> Add New Staff
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 bg-gray-50/30">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input 
               type="text" 
-              placeholder="Search by name..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              placeholder="Filter by name..."
+              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-700"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -118,43 +118,61 @@ const EmployeeManager: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center">
-            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          <div className="p-20 flex justify-center">
+            <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
           </div>
         ) : filteredEmployees.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">
-            No employees found.
+          <div className="p-20 text-center text-gray-400 font-medium">
+            No team members found.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
-                  <th className="px-6 py-4 font-semibold">Name</th>
-                  <th className="px-6 py-4 font-semibold">Hourly Rate</th>
-                  <th className="px-6 py-4 font-semibold">Joined</th>
-                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-bold tracking-widest">
+                  <th className="px-8 py-4">Employee</th>
+                  <th className="px-8 py-4">Hourly Rate</th>
+                  <th className="px-8 py-4">Status</th>
+                  <th className="px-8 py-4 text-right">Management</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-gray-900">{emp.name}</td>
-                    <td className="px-6 py-4 text-gray-600">${emp.hourly_rate.toFixed(2)}/hr</td>
-                    <td className="px-6 py-4 text-gray-500">{new Date(emp.created_at).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button 
-                        onClick={() => openModal(emp)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(emp.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                  <tr key={emp.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold border border-blue-100">
+                          {emp.name.charAt(0)}
+                        </div>
+                        <div>
+                           <div className="font-bold text-gray-900">{emp.name}</div>
+                           <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Joined {new Date(emp.created_at).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5">
+                       <span className="font-black text-gray-900 text-lg">${emp.hourly_rate.toFixed(2)} <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">/hr</span></span>
+                    </td>
+                    <td className="px-8 py-5">
+                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-100 uppercase tracking-tighter">Active</span>
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => openModal(emp)}
+                          className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-100"
+                          title="Edit Profile"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(emp.id)}
+                          className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100"
+                          title="Remove Employee"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -166,47 +184,53 @@ const EmployeeManager: React.FC = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">{editingEmployee ? 'Edit Employee' : 'Add New Employee'}</h3>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white rounded-[40px] shadow-2xl max-w-md w-full overflow-hidden animate-slide-in">
+            <div className="px-10 py-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight">{editingEmployee ? 'Edit Profile' : 'New Staff member'}</h3>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-10 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input 
-                  type="text" 
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="John Doe"
-                />
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                  <input 
+                    type="text" 
+                    required
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-3xl focus:ring-4 focus:ring-blue-500/10 outline-none font-bold text-gray-800 transition-all"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    placeholder="Jane Smith"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate ($)</label>
-                <input 
-                  type="number" 
-                  step="0.01"
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={formData.hourly_rate}
-                  onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
-                  placeholder="20.00"
-                />
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Hourly Rate (USD)</label>
+                <div className="relative">
+                   <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-300">$</div>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    required
+                    className="w-full pl-8 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-3xl focus:ring-4 focus:ring-blue-500/10 outline-none font-bold text-gray-800 transition-all"
+                    value={formData.hourly_rate}
+                    onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
+                    placeholder="25.00"
+                  />
+                </div>
               </div>
-              <div className="pt-4 flex gap-3">
+              <div className="pt-4 flex gap-4">
                 <button 
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-4 bg-gray-100 rounded-2xl font-bold text-gray-600 hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
                 >
                   <Check className="w-5 h-5" /> {editingEmployee ? 'Update' : 'Create'}
                 </button>
