@@ -206,7 +206,7 @@ const EmployeeManager: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Hourly Rate (USD)</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Hourly Rate (CAD)</label>
                 <div className="relative">
                    <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-300">$</div>
                   <input 
