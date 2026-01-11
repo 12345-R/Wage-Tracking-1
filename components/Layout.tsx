@@ -27,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
     { id: 'dashboard' as Tab, label: 'Dash', icon: LayoutDashboard },
     { id: 'employees' as Tab, label: 'Team', icon: Users },
     { id: 'attendance' as Tab, label: 'Log', icon: Clock },
-    { id: 'reports' as Tab, label: 'Pay', icon: FileText },
+    { id: 'reports' as Tab, label: 'Report', icon: FileText },
   ];
 
   const NavButton: React.FC<{ item: typeof navItems[0], isMobile?: boolean }> = ({ item, isMobile = false }) => {
@@ -45,8 +45,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
             isActive ? 'text-white scale-110' : 'text-gray-400'
           }`}
         >
-          <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-blue-400' : 'text-gray-400'}`} />
-          <span className="text-[10px] font-bold uppercase tracking-tight">{item.label}</span>
+          <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-blue-400' : 'text-gray-400'}`} />
+          <span className="text-[12px] font-black uppercase tracking-tight">{item.label}</span>
         </button>
       );
     }
@@ -155,7 +155,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation Bar - Updated to Sleek Dark Theme */}
+      {/* Mobile Bottom Navigation Bar - Sleek Dark Theme with Larger Labels */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 flex justify-around items-center px-1 py-1 z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.15)] rounded-t-2xl">
         {navItems.map(item => (
           <NavButton key={item.id} item={item} isMobile />

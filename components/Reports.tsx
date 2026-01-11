@@ -58,6 +58,35 @@ const Reports: React.FC = () => {
     return Object.values(summaryMap).sort((a, b) => b.wages - a.wages);
   };
 
+  const downloadReport = () => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    
+    if (selectedEmployeeId === 'all') {
+      csvContent += "Employee Name,Total Shifts,Total Hours,Total Pay\n";
+      stats.forEach(e => {
+        csvContent += `${e.name},${e.shifts},${e.hours.toFixed(2)},${e.wages.toFixed(2)}\n`;
+      });
+    } else {
+      const emp = employees.find(e => e.id === selectedEmployeeId);
+      csvContent += `Report for: ${emp?.name || 'Unknown'}\n`;
+      csvContent += "Date,Hours,Pay\n";
+      attendance.forEach(att => {
+        const diff = att.time_out ? (new Date(att.time_out).getTime() - new Date(att.time_in).getTime()) : 0;
+        const hrs = Math.max(0, diff / (1000 * 60 * 60));
+        const pay = hrs * (att.employee?.hourly_rate || 0);
+        csvContent += `${att.date},${hrs.toFixed(2)},${pay.toFixed(2)}\n`;
+      });
+    }
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `WageTrack_Report_${selectedEmployeeId === 'all' ? 'All' : employees.find(e => e.id === selectedEmployeeId)?.name}_${startDate}_to_${endDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const stats = getSummary();
   const totalWages = stats.reduce((sum, e) => sum + e.wages, 0);
   const totalHours = stats.reduce((sum, e) => sum + e.hours, 0);
@@ -67,12 +96,18 @@ const Reports: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" /> Payroll Analytics
           </h2>
         </div>
+        <button 
+          onClick={downloadReport}
+          className="flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-black transition-all shadow-lg"
+        >
+          <Download className="w-4 h-4" /> DOWNLOAD CSV
+        </button>
       </div>
 
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
