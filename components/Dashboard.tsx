@@ -66,54 +66,52 @@ const Dashboard: React.FC = () => {
   };
 
   const MainStat = ({ title, wages, hours, gradient, icon: Icon }: any) => (
-    <div className={`relative overflow-hidden rounded-3xl p-6 text-white shadow-xl ${gradient} transition-transform hover:scale-[1.02]`}>
+    <div className={`relative overflow-hidden rounded-2xl p-4 text-white shadow-lg ${gradient} transition-transform hover:scale-[1.01]`}>
       <div className="relative z-10 flex flex-col h-full justify-between">
         <div className="flex justify-between items-start">
-          <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl">
-            <Icon className="w-6 h-6" />
+          <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-lg">
+            <Icon className="w-5 h-5" />
           </div>
-          <ArrowUpRight className="w-5 h-5 opacity-50" />
+          <ArrowUpRight className="w-4 h-4 opacity-50" />
         </div>
-        <div className="mt-8">
-          <p className="text-white/80 text-sm font-medium uppercase tracking-wider">{title}</p>
-          <h3 className="text-3xl font-bold mt-1">${wages.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
-          <div className="flex items-center gap-1 mt-2 text-white/70 text-sm">
-            <Clock className="w-4 h-4" />
+        <div className="mt-4">
+          <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest">{title}</p>
+          <h3 className="text-2xl font-black mt-0.5">${wages.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+          <div className="flex items-center gap-1 mt-1 text-white/70 text-[11px] font-medium">
+            <Clock className="w-3 h-3" />
             <span>{hours.toFixed(1)} Total Hours</span>
           </div>
         </div>
       </div>
-      {/* Abstract Background Element */}
-      <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
     </div>
   );
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+    <div className="flex items-center justify-center min-h-[300px]">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
     </div>
   );
 
   return (
-    <div className="space-y-10 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Executive Summary</h1>
-          <p className="text-gray-500 font-medium">Overview of wages and productivity metrics.</p>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Summary</h1>
+          <p className="text-xs text-gray-500 font-medium">Real-time wage metrics.</p>
         </div>
-        <div className="flex items-center gap-4 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
-           <div className="flex -space-x-2">
+        <div className="flex items-center gap-3 bg-white p-1.5 rounded-xl shadow-sm border border-gray-100 self-start">
+           <div className="flex -space-x-1.5">
              {[1,2,3].map(i => (
-               <div key={i} className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-500">U{i}</div>
+               <div key={i} className="w-6 h-6 rounded-full bg-gray-200 border border-white flex items-center justify-center text-[8px] font-bold text-gray-500">U{i}</div>
              ))}
            </div>
-           <div className="text-sm font-semibold pr-4">
-             {stats.totalEmployees} Team Members
+           <div className="text-[11px] font-bold pr-2 text-gray-700">
+             {stats.totalEmployees} Active Members
            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MainStat 
           title="Daily Payroll" 
           wages={stats.daily.totalWages} 
@@ -137,15 +135,15 @@ const Dashboard: React.FC = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-bold text-gray-900">Top Earners</h2>
-            <button className="text-blue-600 text-sm font-bold flex items-center hover:underline">View All <ChevronRight className="w-4 h-4" /></button>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-bold text-gray-900">Top Earners</h2>
+            <button className="text-blue-600 text-[11px] font-bold flex items-center hover:underline">Full Report <ChevronRight className="w-3 h-3" /></button>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-4">
             {attendance.length === 0 ? (
-               <div className="text-center py-10 text-gray-400">No shift data found</div>
+               <div className="text-center py-6 text-xs text-gray-400">No shift data available</div>
             ) : (
               Object.values(
                 attendance.reduce((acc: any, curr) => {
@@ -159,18 +157,18 @@ const Dashboard: React.FC = () => {
                   return acc;
                 }, {})
               ).sort((a: any, b: any) => b.wages - a.wages).slice(0, 4).map((e: any, idx: number) => (
-                <div key={idx} className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center font-bold text-gray-400 border border-gray-100">
+                <div key={idx} className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center font-bold text-gray-400 border border-gray-100 text-xs">
                     {e.name.charAt(0)}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-bold text-gray-900">{e.name}</h4>
-                    <p className="text-xs text-gray-500 font-medium">{e.hours.toFixed(1)}h logged</p>
+                    <h4 className="text-xs font-bold text-gray-900 truncate">{e.name}</h4>
+                    <p className="text-[10px] text-gray-500 font-medium">{e.hours.toFixed(1)}h logged</p>
                   </div>
                   <div className="text-right">
-                    <div className="font-black text-gray-900">${e.wages.toFixed(2)}</div>
-                    <div className="w-24 h-1.5 bg-gray-50 rounded-full mt-1 overflow-hidden">
-                       <div className="h-full bg-blue-500" style={{width: `${Math.min(100, (e.wages / stats.monthly.totalWages) * 100)}%`}}></div>
+                    <div className="text-sm font-black text-gray-900">${e.wages.toFixed(2)}</div>
+                    <div className="w-16 h-1 bg-gray-50 rounded-full mt-1 overflow-hidden">
+                       <div className="h-full bg-blue-500" style={{width: `${Math.min(100, (e.wages / Math.max(1, stats.monthly.totalWages)) * 100)}%`}}></div>
                     </div>
                   </div>
                 </div>
@@ -179,28 +177,27 @@ const Dashboard: React.FC = () => {
           </div>
         </section>
 
-        <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Activity</h2>
-          <div className="space-y-4 flex-1">
-            {attendance.slice(0, 6).map((record, i) => (
-              <div key={i} className="flex items-start gap-4 p-3 rounded-2xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
-                <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${record.time_out ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-orange-500 shadow-sm shadow-orange-200 animate-pulse'}`}></div>
-                <div className="flex-1">
+        <section className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
+          <h2 className="text-base font-bold text-gray-900 mb-4">Recent Shifts</h2>
+          <div className="space-y-3 flex-1">
+            {attendance.slice(0, 5).map((record, i) => (
+              <div key={i} className="flex items-start gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors border border-transparent">
+                <div className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${record.time_out ? 'bg-green-500' : 'bg-orange-500 animate-pulse'}`}></div>
+                <div className="flex-1 overflow-hidden">
                   <div className="flex justify-between items-start">
-                    <p className="text-sm font-bold text-gray-900">{record.employee?.name}</p>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{new Date(record.date).toLocaleDateString()}</span>
+                    <p className="text-xs font-bold text-gray-900 truncate">{record.employee?.name}</p>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase">{new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric'})}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-[10px] text-gray-500 mt-0.5 truncate">
                     {record.time_out 
-                      ? `Completed shift: ${new Date(record.time_in).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${new Date(record.time_out).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}` 
-                      : `Currently clocked in since ${new Date(record.time_in).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`}
+                      ? `${new Date(record.time_in).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${new Date(record.time_out).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}` 
+                      : `Clocked in at ${new Date(record.time_in).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`}
                   </p>
                 </div>
               </div>
             ))}
-            {attendance.length === 0 && <p className="text-gray-400 text-center py-10">No recent logs</p>}
+            {attendance.length === 0 && <p className="text-gray-400 text-center py-6 text-xs font-medium">No recent logs</p>}
           </div>
-          <button className="mt-6 w-full py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl hover:bg-gray-100 transition-colors">View All Logs</button>
         </section>
       </div>
     </div>
