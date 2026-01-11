@@ -41,12 +41,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
             setActiveTab(item.id);
             setIsSidebarOpen(false);
           }}
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-1 transition-colors ${
-            isActive ? 'text-blue-600 scale-105' : 'text-gray-400'
+          className={`flex flex-col items-center justify-center flex-1 py-2 px-1 transition-all duration-200 ${
+            isActive ? 'text-white scale-110' : 'text-gray-400'
           }`}
         >
-          <Icon className="w-5 h-5" />
-          <span className="text-[8px] font-bold mt-0.5 uppercase tracking-widest">{item.label}</span>
+          <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-blue-400' : 'text-gray-400'}`} />
+          <span className="text-[10px] font-bold uppercase tracking-tight">{item.label}</span>
         </button>
       );
     }
@@ -70,7 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 pb-16 md:pb-0">
+    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 pb-20 md:pb-0">
       {/* Mobile Top Header */}
       <header className="md:hidden bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-between sticky top-0 z-40 shadow-sm">
         <div className="flex items-center gap-2">
@@ -155,8 +155,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center px-1 py-1 z-40 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
+      {/* Mobile Bottom Navigation Bar - Updated to Sleek Dark Theme */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 flex justify-around items-center px-1 py-1 z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.15)] rounded-t-2xl">
         {navItems.map(item => (
           <NavButton key={item.id} item={item} isMobile />
         ))}
