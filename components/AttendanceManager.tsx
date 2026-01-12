@@ -13,7 +13,6 @@ const AttendanceManager: React.FC = () => {
   const [filterEmployeeId, setFilterEmployeeId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Helper to get local date string in YYYY-MM-DD format
   const getLocalDateString = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -68,26 +67,23 @@ const AttendanceManager: React.FC = () => {
     const timeOut = formData.time_out || null;
 
     try {
-      // 1. DUPLICATE CHECK: Restrict same employee, date, and start time
-      // We check for any record matching these criteria
+      // 1. Duplicate check: Restrict same employee, date, and start time
       const { data: existing, error: checkError } = await supabase
         .from('attendance')
         .select('id')
         .eq('employee_id', formData.employee_id)
         .eq('date', formData.date)
-        .eq('time_in', timeIn)
-        .limit(1);
+        .eq('time_in', timeIn);
 
       if (checkError) throw checkError;
 
-      // If a record exists AND (we are not editing OR the found record is different from the one we are editing)
-      if (existing && existing.length > 0) {
-        const foundRecord = existing[0];
-        if (!editingRecord || foundRecord.id !== editingRecord.id) {
-          setErrorMessage("Data already entered for this shift time.");
-          setIsLogging(false);
-          return;
-        }
+      // Check if any record found matches the current input, excluding the one we are editing
+      const isDuplicate = existing?.some(record => !editingRecord || record.id !== editingRecord.id);
+
+      if (isDuplicate) {
+        setErrorMessage("Data already entered.");
+        setIsLogging(false);
+        return;
       }
 
       const payload = {
@@ -99,24 +95,22 @@ const AttendanceManager: React.FC = () => {
       };
 
       if (editingRecord) {
-        // Update existing record
+        // Explicitly perform the update
         const { error: updateError } = await supabase
           .from('attendance')
           .update(payload)
           .eq('id', editingRecord.id)
-          .eq('user_id', user.id); // Extra security: ensure current user owns the record
+          .eq('user_id', user.id);
         
         if (updateError) throw updateError;
         closeModal();
       } else {
-        // Insert new record
         const { error: insertError } = await supabase
           .from('attendance')
           .insert([payload]);
         
         if (insertError) throw insertError;
         
-        // Reset form for next entry
         setFormData({ 
           employee_id: '', 
           date: getLocalDateString(),
@@ -137,18 +131,15 @@ const AttendanceManager: React.FC = () => {
     setErrorMessage(null);
     const parseTime = (timeStr: string | null) => {
       if (!timeStr) return '';
-      // Support both HH:mm and HH:mm:ss formats from DB
       return timeStr.split(':').slice(0, 2).join(':');
     };
     
-    // Set form data first
     setFormData({
       employee_id: record.employee_id,
       date: record.date,
       time_in: parseTime(record.time_in),
       time_out: parseTime(record.time_out)
     });
-    // Then trigger modal
     setEditingRecord(record);
   };
 
@@ -378,7 +369,7 @@ const AttendanceManager: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredAttendance.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-xs font-bold">No records found.</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-sm font-bold">No records found.</td></tr>
                 ) : (
                   filteredAttendance.map((record) => {
                     const hours = calculateHours(record.date, record.time_in, record.time_out);

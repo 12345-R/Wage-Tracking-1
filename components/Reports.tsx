@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Attendance, Employee } from '../types';
-import { Download, FileText, Loader2, DollarSign, Clock, User } from 'lucide-react';
+import { Download, FileText, Loader2, DollarSign, Clock, User, ArrowLeft } from 'lucide-react';
 
 const Reports: React.FC = () => {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -49,15 +49,15 @@ const Reports: React.FC = () => {
   };
 
   const getSummary = () => {
-    const summaryMap: Record<string, { name: string, rate: number, hours: number, wages: number, shifts: number }> = {};
+    const summaryMap: Record<string, { id: string, name: string, rate: number, hours: number, wages: number, shifts: number }> = {};
     attendance.forEach(record => {
-      if (!record.employee || !record.time_out) return;
+      if (!record.employee) return;
       const id = record.employee_id;
       const hrs = calculateHours(record.date, record.time_in, record.time_out);
       const pay = hrs * record.employee.hourly_rate;
 
       if (!summaryMap[id]) {
-        summaryMap[id] = { name: record.employee.name, rate: record.employee.hourly_rate, hours: 0, wages: 0, shifts: 0 };
+        summaryMap[id] = { id, name: record.employee.name, rate: record.employee.hourly_rate, hours: 0, wages: 0, shifts: 0 };
       }
       summaryMap[id].hours += hrs;
       summaryMap[id].wages += pay;
@@ -101,13 +101,26 @@ const Reports: React.FC = () => {
   const filterInputClasses = "w-full h-12 px-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-base md:text-sm text-gray-700 appearance-none transition-all";
   const filterLabelClasses = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1";
 
+  const currentEmployeeName = employees.find(e => e.id === selectedEmployeeId)?.name;
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" /> Payroll Analytics (CAD)
-          </h2>
+        <div className="flex items-center gap-4">
+          {selectedEmployeeId !== 'all' && (
+            <button 
+              onClick={() => setSelectedEmployeeId('all')}
+              className="p-2 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-gray-500"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
+          <div>
+            <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" /> 
+              {selectedEmployeeId === 'all' ? 'Payroll Analytics (CAD)' : `Report: ${currentEmployeeName}`}
+            </h2>
+          </div>
         </div>
       </div>
 
@@ -117,7 +130,7 @@ const Reports: React.FC = () => {
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <select value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value)} className={`${filterInputClasses} pl-9`}>
-              <option value="all">Everyone</option>
+              <option value="all">Everyone (Summary)</option>
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.name}</option>
               ))}
@@ -181,11 +194,15 @@ const Reports: React.FC = () => {
                       <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-sm font-bold">No results found for this period.</td></tr>
                     ) : (
                       stats.map((e, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50/50 transition-colors group cursor-pointer" onClick={() => {
-                          const emp = employees.find(emp => emp.name === e.name);
-                          if (emp) setSelectedEmployeeId(emp.id);
-                        }}>
-                          <td className="px-6 py-4 font-black text-sm text-gray-900">{e.name}</td>
+                        <tr 
+                          key={idx} 
+                          className="hover:bg-blue-50/30 transition-colors group cursor-pointer" 
+                          onClick={() => setSelectedEmployeeId(e.id)}
+                        >
+                          <td className="px-6 py-4">
+                             <div className="font-black text-sm text-gray-900 group-hover:text-blue-700 transition-colors">{e.name}</div>
+                             <div className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Click to view details</div>
+                          </td>
                           <td className="px-6 py-4 text-center text-[11px] font-bold text-gray-500">{e.shifts}</td>
                           <td className="px-6 py-4 text-center text-sm font-bold text-gray-600">{e.hours.toFixed(1)}h</td>
                           <td className="px-6 py-4 text-right font-black text-base text-gray-900">${e.wages.toFixed(2)}</td>
