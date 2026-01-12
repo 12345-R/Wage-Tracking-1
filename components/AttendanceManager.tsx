@@ -53,6 +53,8 @@ const AttendanceManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLogging) return; // Prevent double submission
+    
     setIsLogging(true);
     setErrorMessage(null);
 
@@ -67,6 +69,8 @@ const AttendanceManager: React.FC = () => {
     const timeOut = formData.time_out || null;
 
     try {
+      // Validate duplicate only for the same employee, date, and exact time_in
+      // (Unless we are editing that specific record)
       const { data: existing, error: checkError } = await supabase
         .from('attendance')
         .select('id')
@@ -79,7 +83,7 @@ const AttendanceManager: React.FC = () => {
       const isDuplicate = existing?.some(record => !editingRecord || record.id !== editingRecord.id);
 
       if (isDuplicate) {
-        setErrorMessage("Data already entered.");
+        setErrorMessage("A shift with this exact start time already exists for this employee.");
         setIsLogging(false);
         return;
       }
@@ -93,6 +97,7 @@ const AttendanceManager: React.FC = () => {
       };
 
       if (editingRecord) {
+        // Correctly target the specific ID for update
         const { error: updateError } = await supabase
           .from('attendance')
           .update(payload)
@@ -100,6 +105,9 @@ const AttendanceManager: React.FC = () => {
           .eq('user_id', user.id);
         
         if (updateError) throw updateError;
+        
+        // Refresh local data to reflect changes immediately
+        await fetchData();
         closeModal();
       } else {
         const { error: insertError } = await supabase
@@ -114,9 +122,8 @@ const AttendanceManager: React.FC = () => {
           time_in: defaultTimeIn, 
           time_out: defaultTimeOut 
         });
+        await fetchData();
       }
-
-      await fetchData();
     } catch (err: any) {
       setErrorMessage(err.message || "An error occurred while saving.");
     } finally {
@@ -128,6 +135,7 @@ const AttendanceManager: React.FC = () => {
     setErrorMessage(null);
     const parseTime = (timeStr: string | null) => {
       if (!timeStr) return '';
+      // Ensure we only take HH:mm format for HTML inputs
       return timeStr.split(':').slice(0, 2).join(':');
     };
     
@@ -152,7 +160,7 @@ const AttendanceManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Delete this record?')) {
+    if (confirm('Are you sure you want to delete this shift record?')) {
       const { error } = await supabase.from('attendance').delete().eq('id', id);
       if (error) alert(error.message);
       else fetchData();
@@ -164,6 +172,7 @@ const AttendanceManager: React.FC = () => {
     const startTime = new Date(`${date}T${start}`);
     const endTime = new Date(`${date}T${end}`);
     let diff = endTime.getTime() - startTime.getTime();
+    // Handle overnight shifts if necessary (though simple app assumes same day)
     if (diff < 0) diff += 24 * 60 * 60 * 1000;
     return Math.max(0, diff / (1000 * 60 * 60));
   };
@@ -178,8 +187,8 @@ const AttendanceManager: React.FC = () => {
     return `${displayH}:${m} ${ampm}`;
   };
 
-  const inputClasses = "w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base font-bold appearance-none transition-all";
-  const labelClasses = "block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1";
+  const inputClasses = "w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base font-bold appearance-none transition-all";
+  const labelClasses = "block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1";
 
   const filteredAttendance = filterEmployeeId 
     ? attendance.filter(a => a.employee_id === filterEmployeeId)
@@ -190,25 +199,25 @@ const AttendanceManager: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {!editingRecord && (
-        <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-200">
-          <h2 className="text-sm font-black text-gray-900 mb-6 flex items-center gap-2 uppercase tracking-widest">
-            <div className="p-2 bg-blue-50 rounded-xl border border-blue-100">
-              <Clock className="w-5 h-5 text-blue-600" />
+        <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-200">
+          <h2 className="text-[11px] font-black text-gray-900 mb-5 flex items-center gap-2 uppercase tracking-widest">
+            <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
+              <Clock className="w-4 h-4 text-blue-600" />
             </div>
-            Log Shift
+            Record New Shift
           </h2>
           
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {errorMessage && (
-              <div className="bg-red-50 border border-red-200 p-4 rounded-2xl flex items-start gap-3 text-red-700 text-sm font-bold animate-fade-in">
-                <AlertCircle className="w-5 h-5 shrink-0" />
+              <div className="bg-red-50 border border-red-200 p-3.5 rounded-xl flex items-start gap-3 text-red-700 text-xs font-bold animate-fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{errorMessage}</span>
               </div>
             )}
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={labelClasses}>Employee</label>
+                <label className={labelClasses}>Staff Member</label>
                 <div className="relative">
                    <User className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
                    <select 
@@ -217,7 +226,7 @@ const AttendanceManager: React.FC = () => {
                     value={formData.employee_id}
                     onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
                   >
-                    <option value="">Select Employee...</option>
+                    <option value="">Select Staff...</option>
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>{emp.name}</option>
                     ))}
@@ -226,7 +235,7 @@ const AttendanceManager: React.FC = () => {
               </div>
 
               <div>
-                <label className={labelClasses}>Shift Date</label>
+                <label className={labelClasses}>Date</label>
                 <div className="relative">
                   <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
                   <input 
@@ -242,7 +251,7 @@ const AttendanceManager: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClasses}>Time In</label>
+                <label className={labelClasses}>Start Time</label>
                 <input 
                   type="time"
                   required
@@ -252,7 +261,7 @@ const AttendanceManager: React.FC = () => {
                 />
               </div>
               <div>
-                <label className={labelClasses}>Time Out</label>
+                <label className={labelClasses}>End Time</label>
                 <input 
                   type="time"
                   className={inputClasses}
@@ -262,14 +271,14 @@ const AttendanceManager: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-1">
+            <div className="pt-2">
               <button 
                 type="submit"
                 disabled={isLogging || !formData.employee_id}
-                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black py-2 rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 text-base shadow-xl shadow-blue-50 active:scale-95"
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black py-2 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm shadow-lg shadow-blue-50 active:scale-95"
               >
-                {isLogging ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                LOG SHIFT
+                {isLogging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {isLogging ? 'LOGGING...' : 'RECORD SHIFT'}
               </button>
             </div>
           </form>
@@ -278,22 +287,22 @@ const AttendanceManager: React.FC = () => {
 
       {editingRecord && (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-[32px] w-full max-w-lg p-8 animate-slide-in shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Edit Shift</h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-50 transition-colors"><X className="w-6 h-6" /></button>
+          <div className="bg-white rounded-[24px] w-full max-w-lg p-6 animate-slide-in shadow-2xl overflow-hidden border border-gray-100">
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Modify Record</h2>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-50 transition-colors"><X className="w-5 h-5" /></button>
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {errorMessage && (
-                <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-start gap-3 text-red-700 text-sm font-bold animate-fade-in mb-4">
-                  <AlertCircle className="w-5 h-5 shrink-0" />
+                <div className="bg-red-50 border border-red-200 p-3.5 rounded-xl flex items-start gap-3 text-red-700 text-xs font-bold mb-4">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               <div>
-                <label className={labelClasses}>Employee</label>
+                <label className={labelClasses}>Staff Member</label>
                 <select 
                   required
                   className={inputClasses}
@@ -311,23 +320,23 @@ const AttendanceManager: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelClasses}>Time In</label>
+                  <label className={labelClasses}>Start Time</label>
                   <input type="time" required className={inputClasses} value={formData.time_in} onChange={(e) => setFormData({...formData, time_in: e.target.value})} />
                 </div>
                 <div>
-                  <label className={labelClasses}>Time Out</label>
+                  <label className={labelClasses}>End Time</label>
                   <input type="time" className={inputClasses} value={formData.time_out} onChange={(e) => setFormData({...formData, time_out: e.target.value})} />
                 </div>
               </div>
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={closeModal} className="flex-1 h-14 bg-gray-100 text-gray-500 font-bold rounded-2xl text-sm hover:bg-gray-200 transition-colors uppercase tracking-widest">Cancel</button>
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={closeModal} className="flex-1 h-12 bg-gray-100 text-gray-500 font-bold rounded-xl text-xs hover:bg-gray-200 transition-colors uppercase tracking-widest">Cancel</button>
                 <button 
                   type="submit" 
                   disabled={isLogging}
-                  className="flex-1 h-14 bg-blue-600 text-white font-black rounded-2xl text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50 disabled:opacity-50 uppercase tracking-widest"
+                  className="flex-1 h-12 bg-blue-600 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50 disabled:opacity-50 uppercase tracking-widest"
                 >
-                   {isLogging ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />} 
-                   {isLogging ? 'SAVING' : 'UPDATE'}
+                   {isLogging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} 
+                   {isLogging ? 'SAVING...' : 'UPDATE RECORD'}
                 </button>
               </div>
             </form>
@@ -335,104 +344,98 @@ const AttendanceManager: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-[32px] shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/40">
-          <div className="flex items-center gap-4">
+      {/* Table Container */}
+      <div className="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-gray-200 flex items-center justify-between bg-gray-50/40">
+          <div className="flex items-center gap-3">
             {filterEmployeeId && (
               <button 
                 onClick={() => setFilterEmployeeId(null)}
-                className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition-all text-blue-600 shadow-sm group"
-                title="Go Back"
+                className="p-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-all text-blue-600 shadow-sm group"
               >
-                <ArrowLeft className="w-5 h-5 group-active:scale-90 transition-transform" />
+                <ArrowLeft className="w-4 h-4" />
               </button>
             )}
             <div>
-              <h3 className="text-[12px] font-black text-gray-900 uppercase tracking-widest leading-none">
-                {filterEmployeeId ? `Shifts: ${filteredEmployeeName}` : 'All Shift Logs'}
+              <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest leading-none">
+                {filterEmployeeId ? `History: ${filteredEmployeeName}` : 'Activity Log'}
               </h3>
-              <p className="text-[10px] text-gray-400 font-bold mt-1.5 uppercase tracking-tight">
-                {filterEmployeeId ? 'Viewing specific history' : 'Click a name for details'}
-              </p>
             </div>
           </div>
           
           {filterEmployeeId && (
             <button 
               onClick={() => setFilterEmployeeId(null)}
-              className="text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest flex items-center gap-1.5"
+              className="text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest flex items-center gap-1"
             >
-              Everyone
-              <X className="w-3.5 h-3.5" />
+              Clear Filter <X className="w-3 h-3" />
             </button>
           )}
         </div>
 
         {loading ? (
-          <div className="p-16 flex justify-center"><Loader2 className="w-10 h-10 text-blue-600 animate-spin" /></div>
+          <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-gray-50/70 text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-200">
-                  <th className="px-6 py-4">Staff</th>
-                  <th className="px-4 py-4 text-center">Date</th>
-                  <th className="px-4 py-4 text-center">In</th>
-                  <th className="px-4 py-4 text-center">Out</th>
-                  <th className="px-4 py-4 text-center">Hrs</th>
-                  <th className="px-6 py-4 text-right">Action</th>
+                <tr className="bg-gray-50/70 text-gray-400 text-[9px] uppercase font-black tracking-widest border-b border-gray-200">
+                  <th className="px-6 py-3">Staff</th>
+                  <th className="px-4 py-3 text-center">Date</th>
+                  <th className="px-4 py-3 text-center">In</th>
+                  <th className="px-4 py-3 text-center">Out</th>
+                  <th className="px-4 py-3 text-center">Hrs</th>
+                  <th className="px-6 py-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredAttendance.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-base font-bold italic">No records.</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-10 text-center text-gray-400 text-xs font-bold italic">No records found.</td></tr>
                 ) : (
                   filteredAttendance.map((record) => {
                     const hours = calculateHours(record.date, record.time_in, record.time_out);
                     return (
                       <tr key={record.id} className="hover:bg-blue-50/5 transition-colors group">
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-3">
                           <button 
                             onClick={() => setFilterEmployeeId(record.employee_id)}
                             className="text-left group/name flex flex-col"
                           >
-                            <span className="text-lg font-black text-gray-900 group-hover/name:text-blue-600 transition-colors inline-block pb-0.5 border-b-2 border-blue-100 group-hover/name:border-blue-400">
+                            <span className="text-sm font-black text-gray-900 group-hover/name:text-blue-600 transition-colors inline-block pb-0.5 border-b border-transparent group-hover/name:border-blue-400">
                               {record.employee?.name || '---'}
                             </span>
-                            <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1 flex items-center gap-0.5">
-                              <DollarSign className="w-2.5 h-2.5" /> {record.employee?.hourly_rate}/h
+                            <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest mt-0.5 flex items-center gap-0.5">
+                              <DollarSign className="w-2 h-2" /> {record.employee?.hourly_rate}/h
                             </span>
                           </button>
                         </td>
-                        <td className="px-4 py-4 text-center">
-                          <div className="text-sm font-bold text-gray-700 whitespace-nowrap bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
+                        <td className="px-4 py-3 text-center">
+                          <div className="text-[11px] font-bold text-gray-700 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">
                             {new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-center">
-                          <div className="text-sm font-black text-blue-600 whitespace-nowrap">{formatTime(record.time_in)}</div>
+                        <td className="px-4 py-3 text-center">
+                          <div className="text-xs font-black text-blue-600 whitespace-nowrap">{formatTime(record.time_in)}</div>
                         </td>
-                        <td className="px-4 py-4 text-center">
-                          <div className="text-sm font-black text-gray-500 whitespace-nowrap">{formatTime(record.time_out)}</div>
+                        <td className="px-4 py-3 text-center">
+                          <div className="text-xs font-black text-gray-500 whitespace-nowrap">{formatTime(record.time_out)}</div>
                         </td>
-                        <td className="px-4 py-4 text-center">
-                          <span className="text-base font-black text-gray-900 bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100/50">{hours.toFixed(1)}h</span>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-xs font-black text-gray-900 bg-blue-50/50 px-2 py-1 rounded-lg border border-blue-100/50">{hours.toFixed(1)}h</span>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-all">
+                        <td className="px-6 py-3 text-right">
+                          <div className="flex justify-end gap-1.5 md:opacity-0 group-hover:opacity-100 transition-all">
                             <button 
                               onClick={() => openEdit(record)} 
-                              className="p-3 bg-white text-blue-500 border border-gray-200 hover:bg-blue-500 hover:text-white rounded-xl transition-all shadow-sm" 
-                              title="Edit"
+                              className="p-2 bg-white text-blue-500 border border-gray-200 hover:bg-blue-500 hover:text-white rounded-lg transition-all shadow-sm" 
                             >
-                              <Edit2 className="w-4 h-4" />
+                              <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button 
                               onClick={() => handleDelete(record.id)} 
-                              className="p-3 bg-white text-red-400 border border-gray-200 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm" 
-                              title="Delete"
+                              className="p-2 bg-white text-red-400 border border-gray-200 hover:bg-red-500 hover:text-white rounded-lg transition-all shadow-sm" 
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
