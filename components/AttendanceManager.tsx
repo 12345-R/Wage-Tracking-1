@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Employee, Attendance } from '../types';
-import { Plus, Clock, Trash2, Loader2, Edit2, X, Check, Filter, User } from 'lucide-react';
+import { Plus, Clock, Trash2, Loader2, Edit2, X, Check, AlertCircle } from 'lucide-react';
 
 const AttendanceManager: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -11,6 +11,7 @@ const AttendanceManager: React.FC = () => {
   const [isLogging, setIsLogging] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Attendance | null>(null);
   const [filterEmployeeId, setFilterEmployeeId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Helper to get local date string in YYYY-MM-DD format
   const getLocalDateString = () => {
@@ -21,7 +22,6 @@ const AttendanceManager: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Set default times: 2:30 PM (14:30) and 11:00 PM (23:00)
   const defaultTimeIn = "14:30";
   const defaultTimeOut = "23:00";
 
@@ -55,56 +55,87 @@ const AttendanceManager: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLogging(true);
+    setErrorMessage(null);
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setErrorMessage("Session expired. Please log in again.");
+      setIsLogging(false);
+      return;
+    }
 
-    // Send only the time string (HH:mm) as the database column type is TIME
     const timeIn = formData.time_in;
     const timeOut = formData.time_out || null;
 
-    if (editingRecord) {
-      const { error } = await supabase
+    try {
+      // 1. Duplicate check: prevent duplicate entry for same employee, date, and start time
+      const { data: existing, error: checkError } = await supabase
         .from('attendance')
-        .update({
+        .select('id')
+        .eq('employee_id', formData.employee_id)
+        .eq('date', formData.date)
+        .eq('time_in', timeIn)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      // If record exists and it's not the one we are currently editing
+      if (existing && (!editingRecord || existing.id !== editingRecord.id)) {
+        setErrorMessage("This shift entry already exists for this staff member at this time.");
+        setIsLogging(false);
+        return;
+      }
+
+      if (editingRecord) {
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('attendance')
+          .update({
+            employee_id: formData.employee_id,
+            date: formData.date,
+            time_in: timeIn,
+            time_out: timeOut
+          })
+          .eq('id', editingRecord.id);
+        
+        if (updateError) throw updateError;
+        closeModal();
+      } else {
+        // Insert new record
+        const { error: insertError } = await supabase.from('attendance').insert([{
+          user_id: user.id,
           employee_id: formData.employee_id,
           date: formData.date,
           time_in: timeIn,
           time_out: timeOut
-        })
-        .eq('id', editingRecord.id);
-      
-      if (error) alert(error.message);
-      else closeModal();
-    } else {
-      const { error } = await supabase.from('attendance').insert([{
-        user_id: user.id,
-        employee_id: formData.employee_id,
-        date: formData.date,
-        time_in: timeIn,
-        time_out: timeOut
-      }]);
-      
-      if (error) alert(error.message);
-    }
+        }]);
+        
+        if (insertError) throw insertError;
+        
+        // Reset form for next entry if it was a new creation
+        setFormData({ 
+          employee_id: '', 
+          date: getLocalDateString(),
+          time_in: defaultTimeIn, 
+          time_out: defaultTimeOut 
+        });
+      }
 
-    if (!editingRecord) {
-      setFormData({ 
-        employee_id: '', 
-        date: getLocalDateString(),
-        time_in: defaultTimeIn, 
-        time_out: defaultTimeOut 
-      });
+      fetchData();
+    } catch (err: any) {
+      setErrorMessage(err.message || "An error occurred while saving.");
+    } finally {
+      setIsLogging(false);
     }
-    fetchData();
-    setIsLogging(false);
   };
 
   const openEdit = (record: Attendance) => {
+    setErrorMessage(null);
     setEditingRecord(record);
     const parseTime = (timeStr: string | null) => {
       if (!timeStr) return '';
-      return timeStr.slice(0, 5);
+      // Support both HH:mm and HH:mm:ss formats from DB
+      return timeStr.split(':').slice(0, 2).join(':');
     };
     
     setFormData({
@@ -117,6 +148,7 @@ const AttendanceManager: React.FC = () => {
 
   const closeModal = () => {
     setEditingRecord(null);
+    setErrorMessage(null);
     setFormData({
       employee_id: '',
       date: getLocalDateString(),
@@ -144,11 +176,12 @@ const AttendanceManager: React.FC = () => {
 
   const formatTime = (time: string | null) => {
     if (!time) return '--:--';
-    const [hours, minutes] = time.split(':');
-    const h = parseInt(hours);
+    const parts = time.split(':');
+    const h = parseInt(parts[0]);
+    const m = parts[1];
     const ampm = h >= 12 ? 'PM' : 'AM';
     const displayH = h % 12 || 12;
-    return `${displayH}:${minutes} ${ampm}`;
+    return `${displayH}:${m} ${ampm}`;
   };
 
   const inputClasses = "w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base md:text-sm font-bold appearance-none transition-all";
@@ -172,6 +205,13 @@ const AttendanceManager: React.FC = () => {
           </h2>
           
           <form onSubmit={handleSubmit} className="space-y-5">
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3 text-red-700 text-xs font-bold animate-fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+            
             <div>
               <label className={labelClasses}>Employee</label>
               <select 
@@ -200,7 +240,7 @@ const AttendanceManager: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClasses}>In (2:30 PM)</label>
+                <label className={labelClasses}>In Time</label>
                 <input 
                   type="time"
                   required
@@ -210,7 +250,7 @@ const AttendanceManager: React.FC = () => {
                 />
               </div>
               <div>
-                <label className={labelClasses}>Out (11:00 PM)</label>
+                <label className={labelClasses}>Out Time</label>
                 <input 
                   type="time"
                   className={inputClasses}
@@ -236,12 +276,20 @@ const AttendanceManager: React.FC = () => {
 
       {editingRecord && (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-[40px] w-full max-w-sm p-8 animate-slide-in shadow-2xl">
+          <div className="bg-white rounded-[40px] w-full max-w-sm p-8 animate-slide-in shadow-2xl overflow-hidden">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Edit Shift</h2>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-50 transition-colors"><X className="w-6 h-6" /></button>
             </div>
+            
             <form onSubmit={handleSubmit} className="space-y-4">
+              {errorMessage && (
+                <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3 text-red-700 text-[10px] font-bold animate-fade-in mb-2">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
               <div>
                 <label className={labelClasses}>Employee</label>
                 <select 
@@ -271,8 +319,13 @@ const AttendanceManager: React.FC = () => {
               </div>
               <div className="flex gap-4 pt-4">
                 <button type="button" onClick={closeModal} className="flex-1 h-12 bg-gray-100 text-gray-600 font-bold rounded-2xl text-xs hover:bg-gray-200 transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 h-12 bg-blue-600 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50">
-                   <Check className="w-4 h-4" /> UPDATE
+                <button 
+                  type="submit" 
+                  disabled={isLogging}
+                  className="flex-1 h-12 bg-blue-600 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50 disabled:opacity-50"
+                >
+                   {isLogging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} 
+                   {isLogging ? 'SAVING' : 'UPDATE'}
                 </button>
               </div>
             </form>
