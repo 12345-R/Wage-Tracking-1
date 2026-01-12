@@ -68,51 +68,55 @@ const AttendanceManager: React.FC = () => {
     const timeOut = formData.time_out || null;
 
     try {
-      // 1. Duplicate check: prevent duplicate entry for same employee, date, and start time
+      // 1. DUPLICATE CHECK: Restrict same employee, date, and start time
+      // We check for any record matching these criteria
       const { data: existing, error: checkError } = await supabase
         .from('attendance')
         .select('id')
         .eq('employee_id', formData.employee_id)
         .eq('date', formData.date)
         .eq('time_in', timeIn)
-        .maybeSingle();
+        .limit(1);
 
       if (checkError) throw checkError;
 
-      // If record exists and it's not the one we are currently editing
-      if (existing && (!editingRecord || existing.id !== editingRecord.id)) {
-        setErrorMessage("This shift entry already exists for this staff member at this time.");
-        setIsLogging(false);
-        return;
+      // If a record exists AND (we are not editing OR the found record is different from the one we are editing)
+      if (existing && existing.length > 0) {
+        const foundRecord = existing[0];
+        if (!editingRecord || foundRecord.id !== editingRecord.id) {
+          setErrorMessage("Data already entered for this shift time.");
+          setIsLogging(false);
+          return;
+        }
       }
+
+      const payload = {
+        employee_id: formData.employee_id,
+        date: formData.date,
+        time_in: timeIn,
+        time_out: timeOut,
+        user_id: user.id
+      };
 
       if (editingRecord) {
         // Update existing record
         const { error: updateError } = await supabase
           .from('attendance')
-          .update({
-            employee_id: formData.employee_id,
-            date: formData.date,
-            time_in: timeIn,
-            time_out: timeOut
-          })
-          .eq('id', editingRecord.id);
+          .update(payload)
+          .eq('id', editingRecord.id)
+          .eq('user_id', user.id); // Extra security: ensure current user owns the record
         
         if (updateError) throw updateError;
         closeModal();
       } else {
         // Insert new record
-        const { error: insertError } = await supabase.from('attendance').insert([{
-          user_id: user.id,
-          employee_id: formData.employee_id,
-          date: formData.date,
-          time_in: timeIn,
-          time_out: timeOut
-        }]);
+        const { error: insertError } = await supabase
+          .from('attendance')
+          .insert([payload]);
         
         if (insertError) throw insertError;
         
-        // Reset form for next entry if it was a new creation
+        // Reset form for next entry
         setFormData({ 
           employee_id: '', 
           date: getLocalDateString(),
@@ -121,7 +125,7 @@ const AttendanceManager: React.FC = () => {
         });
       }
 
-      fetchData();
+      await fetchData();
     } catch (err: any) {
       setErrorMessage(err.message || "An error occurred while saving.");
     } finally {
@@ -131,19 +135,21 @@ const AttendanceManager: React.FC = () => {
 
   const openEdit = (record: Attendance) => {
     setErrorMessage(null);
-    setEditingRecord(record);
     const parseTime = (timeStr: string | null) => {
       if (!timeStr) return '';
       // Support both HH:mm and HH:mm:ss formats from DB
       return timeStr.split(':').slice(0, 2).join(':');
     };
     
+    // Set form data first
     setFormData({
       employee_id: record.employee_id,
       date: record.date,
       time_in: parseTime(record.time_in),
       time_out: parseTime(record.time_out)
     });
+    // Then trigger modal
+    setEditingRecord(record);
   };
 
   const closeModal = () => {
@@ -284,8 +290,8 @@ const AttendanceManager: React.FC = () => {
             
             <form onSubmit={handleSubmit} className="space-y-4">
               {errorMessage && (
-                <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3 text-red-700 text-[10px] font-bold animate-fade-in mb-2">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3 text-red-700 text-[11px] font-bold animate-fade-in mb-4">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
@@ -318,11 +324,11 @@ const AttendanceManager: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-4 pt-4">
-                <button type="button" onClick={closeModal} className="flex-1 h-12 bg-gray-100 text-gray-600 font-bold rounded-2xl text-xs hover:bg-gray-200 transition-colors">Cancel</button>
+                <button type="button" onClick={closeModal} className="flex-1 h-12 bg-gray-100 text-gray-500 font-bold rounded-2xl text-xs hover:bg-gray-200 transition-colors uppercase tracking-widest">Cancel</button>
                 <button 
                   type="submit" 
                   disabled={isLogging}
-                  className="flex-1 h-12 bg-blue-600 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50 disabled:opacity-50"
+                  className="flex-1 h-12 bg-blue-600 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50 disabled:opacity-50 uppercase tracking-widest"
                 >
                    {isLogging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} 
                    {isLogging ? 'SAVING' : 'UPDATE'}
