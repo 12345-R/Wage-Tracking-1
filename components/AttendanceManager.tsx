@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Employee, Attendance } from '../types';
-import { Plus, Clock, Trash2, Loader2, Edit2, X, Check } from 'lucide-react';
+import { Plus, Clock, Trash2, Loader2, Edit2, X, Check, Filter, User } from 'lucide-react';
 
 const AttendanceManager: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -10,6 +10,7 @@ const AttendanceManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isLogging, setIsLogging] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Attendance | null>(null);
+  const [filterEmployeeId, setFilterEmployeeId] = useState<string | null>(null);
   
   // Helper to get local date string in YYYY-MM-DD format
   const getLocalDateString = () => {
@@ -43,7 +44,7 @@ const AttendanceManager: React.FC = () => {
         .select('*, employee:employees(*)')
         .order('date', { ascending: false })
         .order('time_in', { ascending: false })
-        .limit(50)
+        .limit(100)
     ]);
     
     if (empRes.data) setEmployees(empRes.data);
@@ -101,7 +102,6 @@ const AttendanceManager: React.FC = () => {
 
   const openEdit = (record: Attendance) => {
     setEditingRecord(record);
-    // Databases usually return TIME as HH:mm:ss, we only need HH:mm for the input
     const parseTime = (timeStr: string | null) => {
       if (!timeStr) return '';
       return timeStr.slice(0, 5);
@@ -137,19 +137,28 @@ const AttendanceManager: React.FC = () => {
     if (!end) return 0;
     const startTime = new Date(`${date}T${start}`);
     const endTime = new Date(`${date}T${end}`);
-    
-    // Handle overnight shifts if end time is before start time
     let diff = endTime.getTime() - startTime.getTime();
-    if (diff < 0) {
-      // Add 24 hours in milliseconds
-      diff += 24 * 60 * 60 * 1000;
-    }
-    
+    if (diff < 0) diff += 24 * 60 * 60 * 1000;
     return Math.max(0, diff / (1000 * 60 * 60));
+  };
+
+  const formatTime = (time: string | null) => {
+    if (!time) return '--:--';
+    const [hours, minutes] = time.split(':');
+    const h = parseInt(hours);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 || 12;
+    return `${displayH}:${minutes} ${ampm}`;
   };
 
   const inputClasses = "w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base md:text-sm font-bold appearance-none transition-all";
   const labelClasses = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1";
+
+  const filteredAttendance = filterEmployeeId 
+    ? attendance.filter(a => a.employee_id === filterEmployeeId)
+    : attendance;
+
+  const filteredEmployeeName = employees.find(e => e.id === filterEmployeeId)?.name;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -273,7 +282,24 @@ const AttendanceManager: React.FC = () => {
 
       <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/20">
-          <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Shift Logs</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">
+              {filterEmployeeId ? `Shifts for ${filteredEmployeeName}` : 'All Shift Logs'}
+            </h3>
+            {filterEmployeeId && (
+              <button 
+                onClick={() => setFilterEmployeeId(null)}
+                className="text-[9px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter hover:bg-gray-300 transition-colors"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+          {!filterEmployeeId && (
+            <div className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">
+              Click a name to filter
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -285,24 +311,39 @@ const AttendanceManager: React.FC = () => {
                 <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-100">
                   <th className="px-6 py-4">Staff</th>
                   <th className="px-6 py-4 text-center">Date</th>
-                  <th className="px-6 py-4 text-center">Hours</th>
+                  <th className="px-6 py-4 text-center">In Time</th>
+                  <th className="px-6 py-4 text-center">Out Time</th>
+                  <th className="px-6 py-4 text-center">Total Hours</th>
                   <th className="px-6 py-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {attendance.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-xs font-bold">No records found.</td></tr>
+                {filteredAttendance.length === 0 ? (
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-xs font-bold">No records found.</td></tr>
                 ) : (
-                  attendance.map((record) => {
+                  filteredAttendance.map((record) => {
                     const hours = calculateHours(record.date, record.time_in, record.time_out);
                     return (
                       <tr key={record.id} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-6 py-4">
-                          <div className="text-sm font-black text-gray-900 truncate max-w-[120px] md:max-w-none">{record.employee?.name || '---'}</div>
-                          <div className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">${record.employee?.hourly_rate}/h</div>
+                          <button 
+                            onClick={() => setFilterEmployeeId(record.employee_id)}
+                            className="text-left group/name"
+                          >
+                            <div className="text-sm font-black text-gray-900 group-hover/name:text-blue-600 transition-colors">{record.employee?.name || '---'}</div>
+                            <div className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">${record.employee?.hourly_rate}/h</div>
+                          </button>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <div className="text-[11px] font-bold text-gray-600">{new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}</div>
+                          <div className="text-[11px] font-bold text-gray-600 whitespace-nowrap">
+                            {new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="text-[11px] font-bold text-gray-500 whitespace-nowrap">{formatTime(record.time_in)}</div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="text-[11px] font-bold text-gray-500 whitespace-nowrap">{formatTime(record.time_out)}</div>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className="text-sm font-black text-gray-900">{hours.toFixed(1)}h</span>
