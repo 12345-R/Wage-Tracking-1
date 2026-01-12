@@ -38,19 +38,16 @@ const EmployeeManager: React.FC = () => {
     setSuccess(null);
 
     try {
-      // 1. Get current authenticated user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw new Error("Authentication failed. Please log in again.");
 
-      // 2. Prepare payload exactly matching the schema
       const payload = {
         name: formData.name.trim(),
         hourly_rate: parseFloat(formData.hourly_rate),
-        user_id: user.id // Tie to the logged-in employer
+        user_id: user.id
       };
 
       if (editingEmployee) {
-        // Update existing record
         const { error: dbError } = await supabase
           .from('employees')
           .update(payload)
@@ -59,7 +56,6 @@ const EmployeeManager: React.FC = () => {
         if (dbError) throw dbError;
         setSuccess(`${payload.name} updated successfully.`);
       } else {
-        // Insert new record
         const { error: dbError } = await supabase
           .from('employees')
           .insert([payload]);
@@ -68,7 +64,6 @@ const EmployeeManager: React.FC = () => {
         setSuccess(`${payload.name} added to the team.`);
       }
 
-      // 3. Refresh and close
       setTimeout(() => {
         closeModal();
         fetchEmployees();
@@ -132,14 +127,14 @@ const EmployeeManager: React.FC = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 bg-gray-50/30">
+      <div className="bg-white rounded-[32px] shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 bg-gray-50/30">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input 
               type="text" 
               placeholder="Search team members..."
-              className="w-full pl-12 pr-4 py-4 bg-white border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-base md:text-sm text-gray-700"
+              className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-base md:text-sm text-gray-700"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -158,19 +153,19 @@ const EmployeeManager: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-100">
+                <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-200">
                   <th className="px-8 py-4">Employee Name</th>
                   <th className="px-8 py-4">CAD Rate / hr</th>
                   <th className="px-8 py-4">Status</th>
                   <th className="px-8 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-200">
                 {filteredEmployees.map((emp) => (
                   <tr key={emp.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold border border-indigo-100 shadow-sm">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold border border-indigo-200 shadow-sm">
                           {emp.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -183,20 +178,20 @@ const EmployeeManager: React.FC = () => {
                        <span className="font-black text-gray-900 text-lg">${emp.hourly_rate.toFixed(2)}</span>
                     </td>
                     <td className="px-8 py-5">
-                       <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black bg-green-50 text-green-600 border border-green-100 uppercase tracking-widest">Active</span>
+                       <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black bg-green-50 text-green-600 border border-green-200 uppercase tracking-widest">Active</span>
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={() => openModal(emp)}
-                          className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-100 shadow-sm"
+                          className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-gray-100 hover:border-blue-200 shadow-sm"
                           title="Edit Profile"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button 
                           onClick={() => handleDelete(emp.id)}
-                          className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100 shadow-sm"
+                          className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-gray-100 hover:border-red-200 shadow-sm"
                           title="Remove Employee"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -211,25 +206,24 @@ const EmployeeManager: React.FC = () => {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100] backdrop-blur-md">
           <div className="bg-white rounded-[40px] shadow-2xl max-w-md w-full overflow-hidden animate-slide-in border border-white/20">
-            <div className="px-10 py-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div className="px-10 py-8 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
               <h3 className="text-2xl font-black text-gray-900 tracking-tight">{editingEmployee ? 'Edit Profile' : 'New Staff Member'}</h3>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"><X className="w-6 h-6" /></button>
             </div>
             
             <form onSubmit={handleSubmit} className="p-10 space-y-6">
               {error && (
-                <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3 text-red-700 text-xs font-bold animate-fade-in">
+                <div className="bg-red-50 border border-red-200 p-4 rounded-2xl flex items-start gap-3 text-red-700 text-xs font-bold animate-fade-in">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
 
               {success && (
-                <div className="bg-green-50 border border-green-100 p-4 rounded-2xl flex items-start gap-3 text-green-700 text-xs font-bold animate-fade-in">
+                <div className="bg-green-50 border border-green-200 p-4 rounded-2xl flex items-start gap-3 text-green-700 text-xs font-bold animate-fade-in">
                   <Check className="w-4 h-4 shrink-0" />
                   <span>{success}</span>
                 </div>

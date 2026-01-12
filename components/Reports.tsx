@@ -98,7 +98,7 @@ const Reports: React.FC = () => {
   const totalWages = stats.reduce((sum, e) => sum + e.wages, 0);
   const totalHours = stats.reduce((sum, e) => sum + e.hours, 0);
 
-  const filterInputClasses = "w-full h-12 px-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-base md:text-sm text-gray-700 appearance-none transition-all";
+  const filterInputClasses = "w-full h-12 px-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-base md:text-sm text-gray-700 appearance-none transition-all";
   const filterLabelClasses = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1";
 
   const currentEmployeeName = employees.find(e => e.id === selectedEmployeeId)?.name;
@@ -110,7 +110,7 @@ const Reports: React.FC = () => {
           {selectedEmployeeId !== 'all' && (
             <button 
               onClick={() => setSelectedEmployeeId('all')}
-              className="p-2 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-gray-500"
+              className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-gray-500"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -124,7 +124,7 @@ const Reports: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
         <div className="col-span-2 md:col-span-1">
           <label className={filterLabelClasses}>Staff Member</label>
           <div className="relative">
@@ -153,27 +153,27 @@ const Reports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Pay</p>
             <h3 className="text-xl font-black text-gray-900">${totalWages.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
           </div>
-          <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
+          <div className="p-3 bg-blue-50 rounded-xl text-blue-600 border border-blue-100">
             <DollarSign className="w-5 h-5" />
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hours</p>
             <h3 className="text-xl font-black text-gray-900">{totalHours.toFixed(1)}h</h3>
           </div>
-          <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
+          <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 border border-indigo-100">
             <Clock className="w-5 h-5" />
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-16 flex justify-center"><Loader2 className="w-10 h-10 text-blue-600 animate-spin" /></div>
         ) : (
@@ -181,14 +181,14 @@ const Reports: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-100">
+                  <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-200">
                     <th className="px-6 py-4">{selectedEmployeeId === 'all' ? 'Name' : 'Date'}</th>
                     <th className="px-6 py-4 text-center">Shifts</th>
                     <th className="px-6 py-4 text-center">Hours</th>
                     <th className="px-6 py-4 text-right">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-100">
                   {selectedEmployeeId === 'all' ? (
                     stats.length === 0 ? (
                       <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-sm font-bold">No results found for this period.</td></tr>
@@ -230,7 +230,7 @@ const Reports: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-center">
+            <div className="p-6 bg-gray-50/50 border-t border-gray-200 flex justify-center">
               <button onClick={downloadReport} className="flex items-center justify-center gap-3 bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-2xl text-sm font-black transition-all shadow-xl shadow-gray-200 active:scale-95">
                 <Download className="w-5 h-5" /> DOWNLOAD CSV REPORT
               </button>
