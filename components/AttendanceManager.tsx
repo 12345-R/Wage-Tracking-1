@@ -11,13 +11,22 @@ const AttendanceManager: React.FC = () => {
   const [isLogging, setIsLogging] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Attendance | null>(null);
   
+  // Helper to get local date string in YYYY-MM-DD format
+  const getLocalDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Set default times: 2:30 PM (14:30) and 11:00 PM (23:00)
   const defaultTimeIn = "14:30";
   const defaultTimeOut = "23:00";
 
   const [formData, setFormData] = useState({
     employee_id: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDateString(),
     time_in: defaultTimeIn,
     time_out: defaultTimeOut
   });
@@ -81,7 +90,7 @@ const AttendanceManager: React.FC = () => {
     if (!editingRecord) {
       setFormData({ 
         employee_id: '', 
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateString(),
         time_in: defaultTimeIn, 
         time_out: defaultTimeOut 
       });
@@ -110,7 +119,7 @@ const AttendanceManager: React.FC = () => {
     setEditingRecord(null);
     setFormData({
       employee_id: '',
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(),
       time_in: defaultTimeIn,
       time_out: defaultTimeOut
     });
