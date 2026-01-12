@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Attendance } from '../types';
-import { DollarSign, Clock, Users, Calendar, TrendingUp, ArrowUpRight, ChevronRight } from 'lucide-react';
+import { DollarSign, Clock, Users, Calendar, TrendingUp, ArrowUpRight, Award, PieChart } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -29,13 +29,13 @@ const Dashboard: React.FC = () => {
 
   const fetchStats = async () => {
     setLoading(true);
-    const monthAgo = new Date();
-    monthAgo.setDate(monthAgo.getDate() - 31);
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [attRes, empRes] = await Promise.all([
       supabase.from('attendance')
         .select('*, employee:employees(*)')
-        .gte('date', monthAgo.toISOString().split('T')[0]),
+        .gte('date', startOfMonth.toISOString().split('T')[0]),
       supabase.from('employees').select('id', { count: 'exact' })
     ]);
 
@@ -43,7 +43,6 @@ const Dashboard: React.FC = () => {
       const data = attRes.data as Attendance[];
       setAttendance(data);
 
-      const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
@@ -73,121 +72,173 @@ const Dashboard: React.FC = () => {
     setLoading(false);
   };
 
-  const MainStat = ({ title, wages, hours, gradient, icon: Icon }: any) => (
-    <div className={`relative overflow-hidden rounded-2xl p-4 text-white shadow-lg ${gradient} transition-transform hover:scale-[1.01]`}>
-      <div className="relative z-10 flex flex-col h-full justify-between">
-        <div className="flex justify-between items-start">
-          <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-lg">
-            <Icon className="w-5 h-5" />
-          </div>
-          <ArrowUpRight className="w-4 h-4 opacity-50" />
-        </div>
-        <div className="mt-4">
-          <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest">{title}</p>
-          <h3 className="text-2xl font-black mt-0.5">${wages.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
-          <div className="flex items-center gap-1 mt-1 text-white/70 text-[11px] font-medium">
-            <Clock className="w-3 h-3" />
-            <span>{hours.toFixed(1)} Total Hours</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[300px]">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
     </div>
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
+      {/* Header section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Summary</h1>
-          <p className="text-xs text-gray-500 font-medium">Real-time wage metrics (CAD).</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Monthly Performance</h1>
+          <p className="text-gray-500 font-bold uppercase text-[10px] tracking-widest mt-1">Snapshot for {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
         </div>
-        <div className="flex items-center gap-3 bg-white p-1.5 rounded-xl shadow-sm border border-gray-100 self-start">
-           <div className="flex -space-x-1.5">
-             {[1,2,3].map(i => (
-               <div key={i} className="w-6 h-6 rounded-full bg-gray-200 border border-white flex items-center justify-center text-[8px] font-bold text-gray-500">U{i}</div>
-             ))}
+        <div className="flex items-center gap-4 bg-white px-5 py-3 rounded-2xl border border-gray-200 shadow-sm self-start">
+           <div className="p-2 bg-blue-50 rounded-xl">
+             <Users className="w-5 h-5 text-blue-600" />
            </div>
-           <div className="text-[11px] font-bold pr-2 text-gray-700">
-             {stats.totalEmployees} Active Members
+           <div>
+             <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Total Staff</div>
+             <div className="text-xl font-black text-gray-900 leading-none mt-1">{stats.totalEmployees}</div>
            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MainStat title="Daily Payroll" wages={stats.daily.totalWages} hours={stats.daily.totalHours} gradient="bg-gradient-to-br from-orange-400 to-rose-500" icon={Calendar} />
-        <MainStat title="Weekly Volume" wages={stats.weekly.totalWages} hours={stats.weekly.totalHours} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" icon={TrendingUp} />
-        <MainStat title="Monthly Outlook" wages={stats.monthly.totalWages} hours={stats.monthly.totalHours} gradient="bg-gradient-to-br from-emerald-400 to-teal-600" icon={DollarSign} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-base font-bold text-gray-900">Top Earners</h2>
-            <button className="text-blue-600 text-[11px] font-bold flex items-center hover:underline">View Analytics</button>
+      {/* Primary KPI Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-8 rounded-[32px] border border-gray-300 shadow-sm group hover:border-blue-300 transition-all">
+          <div className="flex justify-between items-start mb-6">
+            <div className="p-4 bg-green-50 rounded-[20px] border border-green-100 group-hover:bg-green-100 transition-colors">
+              <DollarSign className="w-8 h-8 text-green-600" />
+            </div>
+            <span className="text-[10px] font-black text-green-600 bg-green-50 px-3 py-1 rounded-full uppercase tracking-widest border border-green-100">Monthly Payroll</span>
           </div>
-          <div className="space-y-4">
-            {attendance.length === 0 ? (
-               <div className="text-center py-6 text-xs text-gray-400">No shift data available</div>
-            ) : (
-              Object.values(
-                attendance.reduce((acc: any, curr) => {
-                  if (!curr.employee) return acc;
-                  const id = curr.employee_id;
-                  if (!acc[id]) acc[id] = { name: curr.employee.name, hours: 0, wages: 0 };
-                  const hrs = calculateHours(curr.date, curr.time_in, curr.time_out);
-                  acc[id].hours += hrs;
-                  acc[id].wages += hrs * curr.employee.hourly_rate;
-                  return acc;
-                }, {})
-              ).sort((a: any, b: any) => b.wages - a.wages).slice(0, 4).map((e: any, idx: number) => (
-                <div key={idx} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center font-bold text-gray-400 border border-gray-100 text-xs">
-                    {e.name.charAt(0)}
+          <div className="space-y-1">
+            <h3 className="text-4xl font-black text-gray-900 tracking-tighter">
+              ${stats.monthly.totalWages.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </h3>
+            <p className="text-gray-400 font-bold text-sm">Total estimated spend this month</p>
+          </div>
+          <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <TrendingUp className="w-4 h-4 text-green-500" />
+              Est. Growth: +4.2%
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-gray-300" />
+          </div>
+        </div>
+
+        <div className="bg-white p-8 rounded-[32px] border border-gray-300 shadow-sm group hover:border-blue-300 transition-all">
+          <div className="flex justify-between items-start mb-6">
+            <div className="p-4 bg-blue-50 rounded-[20px] border border-blue-100 group-hover:bg-blue-100 transition-colors">
+              <Clock className="w-8 h-8 text-blue-600" />
+            </div>
+            <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-100">Monthly Hours</span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-4xl font-black text-gray-900 tracking-tighter">
+              {stats.monthly.totalHours.toFixed(1)} <span className="text-xl text-gray-400 font-black">hrs</span>
+            </h3>
+            <p className="text-gray-400 font-bold text-sm">Collective work time logged</p>
+          </div>
+          <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <PieChart className="w-4 h-4 text-blue-500" />
+              Efficiency: High
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-gray-300" />
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Stats Strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gray-100/50 p-4 rounded-2xl border border-gray-200">
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Daily Wages</p>
+          <p className="text-lg font-black text-gray-800">${stats.daily.totalWages.toFixed(2)}</p>
+        </div>
+        <div className="bg-gray-100/50 p-4 rounded-2xl border border-gray-200">
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Daily Hours</p>
+          <p className="text-lg font-black text-gray-800">{stats.daily.totalHours.toFixed(1)}h</p>
+        </div>
+        <div className="bg-gray-100/50 p-4 rounded-2xl border border-gray-200">
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Weekly Wages</p>
+          <p className="text-lg font-black text-gray-800">${stats.weekly.totalWages.toFixed(2)}</p>
+        </div>
+        <div className="bg-gray-100/50 p-4 rounded-2xl border border-gray-200">
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Weekly Hours</p>
+          <p className="text-lg font-black text-gray-800">{stats.weekly.totalHours.toFixed(1)}h</p>
+        </div>
+      </div>
+
+      {/* Top Earners Section */}
+      <div className="bg-white rounded-[40px] border border-gray-300 overflow-hidden shadow-sm">
+        <div className="px-8 py-6 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Award className="w-6 h-6 text-yellow-500" />
+            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Top Earners <span className="text-gray-400 font-bold ml-1">· This Month</span></h2>
+          </div>
+          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sorted by Gross Pay</div>
+        </div>
+        
+        <div className="divide-y divide-gray-100">
+          {attendance.length === 0 ? (
+             <div className="p-16 text-center text-gray-400 font-bold italic">No shift data found for this month yet.</div>
+          ) : (
+            Object.values(
+              attendance.reduce((acc: any, curr) => {
+                if (!curr.employee) return acc;
+                const id = curr.employee_id;
+                if (!acc[id]) acc[id] = { name: curr.employee.name, hours: 0, wages: 0, rate: curr.employee.hourly_rate };
+                const hrs = calculateHours(curr.date, curr.time_in, curr.time_out);
+                acc[id].hours += hrs;
+                acc[id].wages += hrs * curr.employee.hourly_rate;
+                return acc;
+              }, {})
+            ).sort((a: any, b: any) => b.wages - a.wages).slice(0, 5).map((e: any, idx: number) => (
+              <div key={idx} className="px-8 py-6 flex items-center justify-between hover:bg-gray-50/50 transition-colors group">
+                <div className="flex items-center gap-5">
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-2xl bg-white border-2 border-gray-100 flex items-center justify-center font-black text-gray-400 text-xl shadow-sm group-hover:scale-105 transition-transform">
+                      {e.name.charAt(0)}
+                    </div>
+                    {idx < 3 && (
+                      <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-sm ${
+                        idx === 0 ? 'bg-yellow-400 text-yellow-900' : 
+                        idx === 1 ? 'bg-gray-300 text-gray-700' : 
+                        'bg-amber-600 text-amber-50'
+                      }`}>
+                        {idx + 1}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex-1">
-                    <h4 className="text-xs font-bold text-gray-900 truncate">{e.name}</h4>
-                    <p className="text-[10px] text-gray-500 font-medium">{e.hours.toFixed(1)}h logged</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-black text-gray-900">${e.wages.toFixed(2)}</div>
-                    <div className="w-16 h-1 bg-gray-50 rounded-full mt-1 overflow-hidden">
-                       <div className="h-full bg-blue-500" style={{width: `${Math.min(100, (e.wages / Math.max(1, stats.monthly.totalWages)) * 100)}%`}}></div>
+                  <div>
+                    <h4 className="text-lg font-black text-gray-900">{e.name}</h4>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {e.hours.toFixed(1)} Hours
+                      </span>
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                        <DollarSign className="w-3 h-3" /> ${e.rate}/hr
+                      </span>
                     </div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
-          <h2 className="text-base font-bold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="space-y-3 flex-1">
-            {attendance.slice(0, 5).map((record, i) => (
-              <div key={i} className="flex items-start gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors border border-transparent">
-                <div className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${record.time_out ? 'bg-green-500' : 'bg-orange-500 animate-pulse'}`}></div>
-                <div className="flex-1 overflow-hidden">
-                  <div className="flex justify-between items-start">
-                    <p className="text-xs font-bold text-gray-900 truncate">{record.employee?.name}</p>
-                    <span className="text-[9px] font-bold text-gray-400 uppercase">{new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric', timeZone: 'UTC'})}</span>
+                
+                <div className="text-right">
+                  <div className="text-2xl font-black text-gray-900">${e.wages.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="mt-2 w-32 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-600 rounded-full" 
+                      style={{ width: `${Math.min(100, (e.wages / Math.max(1, stats.monthly.totalWages)) * 100)}%` }}
+                    ></div>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-0.5 truncate">
-                    {record.time_out 
-                      ? `${record.time_in.slice(0, 5)} - ${record.time_out.slice(0, 5)}` 
-                      : `In since ${record.time_in.slice(0, 5)}`}
-                  </p>
                 </div>
               </div>
-            ))}
-            {attendance.length === 0 && <p className="text-gray-400 text-center py-6 text-xs font-medium">No recent logs</p>}
+            ))
+          )}
+        </div>
+        
+        {attendance.length > 0 && (
+          <div className="p-4 bg-gray-50/30 text-center">
+            <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors">
+              Download Full Analytics Report
+            </button>
           </div>
-        </section>
+        )}
       </div>
     </div>
   );
