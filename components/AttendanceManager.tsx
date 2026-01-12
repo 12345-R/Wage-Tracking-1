@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Employee, Attendance } from '../types';
-import { Plus, Clock, Trash2, Loader2, Edit2, X, Check, AlertCircle } from 'lucide-react';
+import { Plus, Clock, Trash2, Loader2, Edit2, X, Check, AlertCircle, ArrowLeft, User } from 'lucide-react';
 
 const AttendanceManager: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -181,8 +181,8 @@ const AttendanceManager: React.FC = () => {
     return `${displayH}:${m} ${ampm}`;
   };
 
-  const inputClasses = "w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base md:text-sm font-bold appearance-none transition-all";
-  const labelClasses = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1";
+  const inputClasses = "w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base font-bold appearance-none transition-all";
+  const labelClasses = "block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1";
 
   const filteredAttendance = filterEmployeeId 
     ? attendance.filter(a => a.employee_id === filterEmployeeId)
@@ -191,20 +191,20 @@ const AttendanceManager: React.FC = () => {
   const filteredEmployeeName = employees.find(e => e.id === filterEmployeeId)?.name;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-12">
       {!editingRecord && (
-        <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
+        <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-100">
           <h2 className="text-sm font-black text-gray-900 mb-6 flex items-center gap-2 uppercase tracking-widest">
             <div className="p-2 bg-blue-50 rounded-lg">
-              <Clock className="w-4 h-4 text-blue-600" />
+              <Clock className="w-5 h-5 text-blue-600" />
             </div>
             Log Shift
           </h2>
           
           <form onSubmit={handleSubmit} className="space-y-5">
             {errorMessage && (
-              <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3 text-red-700 text-xs font-bold animate-fade-in">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3 text-red-700 text-sm font-bold animate-fade-in">
+                <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
@@ -224,18 +224,17 @@ const AttendanceManager: React.FC = () => {
               </select>
             </div>
 
-            <div>
-              <label className={labelClasses}>Shift Date</label>
-              <input 
-                type="date"
-                required
-                className={inputClasses}
-                value={formData.date}
-                onChange={(e) => setFormData({...formData, date: e.target.value})}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label className={labelClasses}>Shift Date</label>
+                <input 
+                  type="date"
+                  required
+                  className={inputClasses}
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                />
+              </div>
               <div>
                 <label className={labelClasses}>In Time</label>
                 <input 
@@ -261,9 +260,9 @@ const AttendanceManager: React.FC = () => {
               <button 
                 type="submit"
                 disabled={isLogging || !formData.employee_id}
-                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black py-2 rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 text-sm shadow-xl shadow-blue-100 active:scale-95"
+                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black py-2 rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 text-base shadow-xl shadow-blue-100 active:scale-95"
               >
-                {isLogging ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                {isLogging ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
                 LOG SHIFT
               </button>
             </div>
@@ -273,16 +272,16 @@ const AttendanceManager: React.FC = () => {
 
       {editingRecord && (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-[40px] w-full max-w-sm p-8 animate-slide-in shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-[40px] w-full max-w-md p-8 animate-slide-in shadow-2xl overflow-hidden">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Edit Shift</h2>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Edit Shift</h2>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-50 transition-colors"><X className="w-6 h-6" /></button>
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {errorMessage && (
-                <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3 text-red-700 text-[11px] font-bold animate-fade-in mb-4">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3 text-red-700 text-sm font-bold animate-fade-in mb-4">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
@@ -315,13 +314,13 @@ const AttendanceManager: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-4 pt-4">
-                <button type="button" onClick={closeModal} className="flex-1 h-12 bg-gray-100 text-gray-500 font-bold rounded-2xl text-xs hover:bg-gray-200 transition-colors uppercase tracking-widest">Cancel</button>
+                <button type="button" onClick={closeModal} className="flex-1 h-14 bg-gray-100 text-gray-500 font-bold rounded-2xl text-sm hover:bg-gray-200 transition-colors uppercase tracking-widest">Cancel</button>
                 <button 
                   type="submit" 
                   disabled={isLogging}
-                  className="flex-1 h-12 bg-blue-600 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50 disabled:opacity-50 uppercase tracking-widest"
+                  className="flex-1 h-14 bg-blue-600 text-white font-black rounded-2xl text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-50 disabled:opacity-50 uppercase tracking-widest"
                 >
-                   {isLogging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} 
+                   {isLogging ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />} 
                    {isLogging ? 'SAVING' : 'UPDATE'}
                 </button>
               </div>
@@ -331,77 +330,103 @@ const AttendanceManager: React.FC = () => {
       )}
 
       <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/20">
-          <div className="flex items-center gap-3">
-            <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">
-              {filterEmployeeId ? `Shifts for ${filteredEmployeeName}` : 'All Shift Logs'}
-            </h3>
+        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
+          <div className="flex items-center gap-4">
             {filterEmployeeId && (
               <button 
                 onClick={() => setFilterEmployeeId(null)}
-                className="text-[9px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter hover:bg-gray-300 transition-colors"
+                className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition-all text-gray-500 shadow-sm group"
+                title="Go Back"
               >
-                Clear Filter
+                <ArrowLeft className="w-5 h-5 group-active:scale-90 transition-transform" />
               </button>
             )}
-          </div>
-          {!filterEmployeeId && (
-            <div className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">
-              Click a name to filter
+            <div>
+              <h3 className="text-[12px] font-black text-gray-900 uppercase tracking-widest leading-none">
+                {filterEmployeeId ? `Shifts for ${filteredEmployeeName}` : 'All Shift Logs'}
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tight">
+                {filterEmployeeId ? 'Showing filtered records' : 'Click a name to filter details'}
+              </p>
             </div>
+          </div>
+          
+          {filterEmployeeId && (
+            <button 
+              onClick={() => setFilterEmployeeId(null)}
+              className="text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest underline underline-offset-4"
+            >
+              Show Everyone
+            </button>
           )}
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>
+          <div className="p-16 flex justify-center"><Loader2 className="w-10 h-10 text-blue-600 animate-spin" /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-100">
-                  <th className="px-6 py-4">Staff</th>
-                  <th className="px-6 py-4 text-center">Date</th>
-                  <th className="px-6 py-4 text-center">In Time</th>
-                  <th className="px-6 py-4 text-center">Out Time</th>
-                  <th className="px-6 py-4 text-center">Total Hours</th>
-                  <th className="px-6 py-4 text-right">Action</th>
+                <tr className="bg-gray-50/50 text-gray-400 text-[11px] uppercase font-black tracking-widest border-b border-gray-100">
+                  <th className="px-8 py-5">Staff</th>
+                  <th className="px-6 py-5 text-center">Date</th>
+                  <th className="px-6 py-5 text-center">In Time</th>
+                  <th className="px-6 py-5 text-center">Out Time</th>
+                  <th className="px-6 py-5 text-center">Hours</th>
+                  <th className="px-8 py-5 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredAttendance.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-sm font-bold">No records found.</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-400 text-base font-bold italic">No records found.</td></tr>
                 ) : (
                   filteredAttendance.map((record) => {
                     const hours = calculateHours(record.date, record.time_in, record.time_out);
                     return (
-                      <tr key={record.id} className="hover:bg-gray-50/50 transition-colors group">
-                        <td className="px-6 py-4">
+                      <tr key={record.id} className="hover:bg-gray-50/40 transition-colors group">
+                        <td className="px-8 py-6">
                           <button 
                             onClick={() => setFilterEmployeeId(record.employee_id)}
-                            className="text-left group/name"
+                            className="text-left group/name flex flex-col"
                           >
-                            <div className="text-sm font-black text-gray-900 group-hover/name:text-blue-600 transition-colors">{record.employee?.name || '---'}</div>
-                            <div className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">${record.employee?.hourly_rate}/h</div>
+                            <span className="text-base font-black text-gray-900 group-hover/name:text-blue-600 transition-colors inline-block pb-0.5 border-b-2 border-transparent group-hover/name:border-blue-100">
+                              {record.employee?.name || '---'}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-black uppercase tracking-tighter mt-1">
+                              ${record.employee?.hourly_rate}/h
+                            </span>
                           </button>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="text-[11px] font-bold text-gray-600 whitespace-nowrap">
+                        <td className="px-6 py-6 text-center">
+                          <div className="text-sm font-bold text-gray-700 whitespace-nowrap">
                             {new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="text-[11px] font-bold text-gray-500 whitespace-nowrap">{formatTime(record.time_in)}</div>
+                        <td className="px-6 py-6 text-center">
+                          <div className="text-sm font-bold text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-1 rounded-lg inline-block">{formatTime(record.time_in)}</div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="text-[11px] font-bold text-gray-500 whitespace-nowrap">{formatTime(record.time_out)}</div>
+                        <td className="px-6 py-6 text-center">
+                          <div className="text-sm font-bold text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-1 rounded-lg inline-block">{formatTime(record.time_out)}</div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="text-sm font-black text-gray-900">{hours.toFixed(1)}h</span>
+                        <td className="px-6 py-6 text-center">
+                          <span className="text-base font-black text-gray-900 bg-blue-50/50 px-3 py-1 rounded-xl">{hours.toFixed(1)}h</span>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-1">
-                            <button onClick={() => openEdit(record)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors" title="Edit Shift"><Edit2 className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(record.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors" title="Delete Shift"><Trash2 className="w-4 h-4" /></button>
+                        <td className="px-8 py-6 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button 
+                              onClick={() => openEdit(record)} 
+                              className="p-3 text-blue-500 hover:bg-blue-50 rounded-2xl transition-all active:scale-90" 
+                              title="Edit Shift"
+                            >
+                              <Edit2 className="w-5 h-5" />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(record.id)} 
+                              className="p-3 text-red-400 hover:bg-red-50 rounded-2xl transition-all active:scale-90" 
+                              title="Delete Shift"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
                           </div>
                         </td>
                       </tr>
