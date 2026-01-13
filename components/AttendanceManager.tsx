@@ -53,7 +53,7 @@ const AttendanceManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLogging) return; // Prevent double submission
+    if (isLogging) return;
     
     setIsLogging(true);
     setErrorMessage(null);
@@ -69,8 +69,8 @@ const AttendanceManager: React.FC = () => {
     const timeOut = formData.time_out || null;
 
     try {
-      // Validate duplicate only for the same employee, date, and exact time_in
-      // (Unless we are editing that specific record)
+      // 1. Check for duplicate shifts (same employee, same date, same start time)
+      // We only flag it as a duplicate if the found record is NOT the one we are currently editing.
       const { data: existing, error: checkError } = await supabase
         .from('attendance')
         .select('id')
@@ -88,31 +88,35 @@ const AttendanceManager: React.FC = () => {
         return;
       }
 
-      const payload = {
-        employee_id: formData.employee_id,
-        date: formData.date,
-        time_in: timeIn,
-        time_out: timeOut,
-        user_id: user.id
-      };
-
       if (editingRecord) {
-        // Correctly target the specific ID for update
+        // 2. Perform UPDATE using explicit fields
         const { error: updateError } = await supabase
           .from('attendance')
-          .update(payload)
+          .update({
+            employee_id: formData.employee_id,
+            date: formData.date,
+            time_in: timeIn,
+            time_out: timeOut
+          })
           .eq('id', editingRecord.id)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id); // Ensure ownership
         
         if (updateError) throw updateError;
         
-        // Refresh local data to reflect changes immediately
+        // Refresh local data and close modal
         await fetchData();
         closeModal();
       } else {
+        // 3. Perform INSERT
         const { error: insertError } = await supabase
           .from('attendance')
-          .insert([payload]);
+          .insert([{
+            employee_id: formData.employee_id,
+            date: formData.date,
+            time_in: timeIn,
+            time_out: timeOut,
+            user_id: user.id
+          }]);
         
         if (insertError) throw insertError;
         
@@ -135,7 +139,7 @@ const AttendanceManager: React.FC = () => {
     setErrorMessage(null);
     const parseTime = (timeStr: string | null) => {
       if (!timeStr) return '';
-      // Ensure we only take HH:mm format for HTML inputs
+      // Ensure we only take HH:mm format for HTML inputs (Supabase might return HH:mm:ss)
       return timeStr.split(':').slice(0, 2).join(':');
     };
     
@@ -172,7 +176,6 @@ const AttendanceManager: React.FC = () => {
     const startTime = new Date(`${date}T${start}`);
     const endTime = new Date(`${date}T${end}`);
     let diff = endTime.getTime() - startTime.getTime();
-    // Handle overnight shifts if necessary (though simple app assumes same day)
     if (diff < 0) diff += 24 * 60 * 60 * 1000;
     return Math.max(0, diff / (1000 * 60 * 60));
   };
