@@ -65,6 +65,9 @@ const AttendanceManager: React.FC = () => {
       return;
     }
 
+    // Ensure date is formatted correctly (YYYY-MM-DD)
+    // HTML5 date inputs return YYYY-MM-DD already, but we ensure it's a clean string
+    const formattedDate = formData.date;
     const timeIn = formData.time_in;
     const timeOut = formData.time_out || null;
 
@@ -74,13 +77,13 @@ const AttendanceManager: React.FC = () => {
         .from('attendance')
         .select('id')
         .eq('employee_id', formData.employee_id)
-        .eq('date', formData.date)
+        .eq('date', formattedDate)
         .eq('time_in', timeIn);
 
       const isDuplicate = existing?.some(record => !editingRecord || record.id !== editingRecord.id);
 
       if (isDuplicate) {
-        setErrorMessage("A shift with this exact start time already exists for this employee.");
+        setErrorMessage("A shift with this exact start time already exists for this employee on this date.");
         setIsLogging(false);
         return;
       }
@@ -91,7 +94,7 @@ const AttendanceManager: React.FC = () => {
           .from('attendance')
           .update({
             employee_id: formData.employee_id,
-            date: formData.date,
+            date: formattedDate,
             time_in: timeIn,
             time_out: timeOut
           })
@@ -108,7 +111,7 @@ const AttendanceManager: React.FC = () => {
           .from('attendance')
           .insert([{
             employee_id: formData.employee_id,
-            date: formData.date,
+            date: formattedDate,
             time_in: timeIn,
             time_out: timeOut,
             user_id: user.id
@@ -133,14 +136,25 @@ const AttendanceManager: React.FC = () => {
 
   const openEdit = (record: Attendance) => {
     setErrorMessage(null);
+    
     const parseTime = (timeStr: string | null) => {
       if (!timeStr) return '';
       return timeStr.split(':').slice(0, 2).join(':');
     };
+
+    // Ensure the date is in YYYY-MM-DD format for the input field
+    const formatDateForInput = (dateStr: string) => {
+      if (!dateStr) return '';
+      // If it includes 'T', it's likely an ISO string, extract the date part
+      if (dateStr.includes('T')) {
+        return dateStr.split('T')[0];
+      }
+      return dateStr;
+    };
     
     setFormData({
       employee_id: record.employee_id,
-      date: record.date,
+      date: formatDateForInput(record.date),
       time_in: parseTime(record.time_in),
       time_out: parseTime(record.time_out)
     });
