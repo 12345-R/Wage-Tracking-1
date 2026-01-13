@@ -24,9 +24,10 @@ const AttendanceManager: React.FC = () => {
   const defaultTimeIn = "14:30";
   const defaultTimeOut = "23:00";
 
+  // Using work_date to match database schema
   const [formData, setFormData] = useState({
     employee_id: '',
-    date: getLocalDateString(),
+    work_date: getLocalDateString(),
     time_in: defaultTimeIn,
     time_out: defaultTimeOut
   });
@@ -42,7 +43,7 @@ const AttendanceManager: React.FC = () => {
         supabase.from('employees').select('*').order('name'),
         supabase.from('attendance')
           .select('*, employee:employees(*)')
-          .order('date', { ascending: false })
+          .order('work_date', { ascending: false })
           .order('time_in', { ascending: false })
           .limit(100)
       ]);
@@ -73,17 +74,17 @@ const AttendanceManager: React.FC = () => {
     }
 
     // Capture the edited date string directly from the input (YYYY-MM-DD)
-    const rawDateValue = formData.date;
+    const editedWorkDate = formData.work_date;
     const timeIn = formData.time_in;
     const timeOut = formData.time_out || null;
 
     try {
-      // Duplicate check: only flag if it's a DIFFERENT record with the same unique keys
+      // Duplicate check: using work_date
       const { data: existing } = await supabase
         .from('attendance')
         .select('id')
         .eq('employee_id', formData.employee_id)
-        .eq('date', rawDateValue)
+        .eq('work_date', editedWorkDate)
         .eq('time_in', timeIn);
 
       const isDuplicate = existing?.some(record => !editingRecord || record.id !== editingRecord.id);
@@ -94,23 +95,15 @@ const AttendanceManager: React.FC = () => {
         return;
       }
 
-      const updatePayload = {
-        employee_id: formData.employee_id,
-        date: rawDateValue, // Raw YYYY-MM-DD string
-        time_in: timeIn,
-        time_out: timeOut,
-        user_id: user.id
-      };
-
       if (editingRecord) {
-        // Explicit UPDATE targeting the specific record ID
+        // Explicit UPDATE query including work_date: editedWorkDate
         const { error: updateError } = await supabase
           .from('attendance')
           .update({
-            employee_id: updatePayload.employee_id,
-            date: updatePayload.date,
-            time_in: updatePayload.time_in,
-            time_out: updatePayload.time_out
+            employee_id: formData.employee_id,
+            work_date: editedWorkDate, 
+            time_in: timeIn,
+            time_out: timeOut
           })
           .eq('id', editingRecord.id)
           .eq('user_id', user.id);
@@ -120,16 +113,22 @@ const AttendanceManager: React.FC = () => {
         closeModal();
         await fetchData();
       } else {
-        // Standard INSERT for new records
+        // Standard INSERT
         const { error: insertError } = await supabase
           .from('attendance')
-          .insert([updatePayload]);
+          .insert([{
+            employee_id: formData.employee_id,
+            work_date: editedWorkDate,
+            time_in: timeIn,
+            time_out: timeOut,
+            user_id: user.id
+          }]);
         
         if (insertError) throw insertError;
         
         setFormData({ 
           employee_id: '', 
-          date: getLocalDateString(),
+          work_date: getLocalDateString(),
           time_in: defaultTimeIn, 
           time_out: defaultTimeOut 
         });
@@ -151,13 +150,13 @@ const AttendanceManager: React.FC = () => {
 
     const formatDateForInput = (dateStr: string) => {
       if (!dateStr) return '';
-      // If it's an ISO timestamp, extract just the date part for the input
+      // Ensure we get only YYYY-MM-DD
       return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
     };
     
     setFormData({
       employee_id: record.employee_id,
-      date: formatDateForInput(record.date),
+      work_date: formatDateForInput(record.work_date),
       time_in: parseTime(record.time_in),
       time_out: parseTime(record.time_out)
     });
@@ -169,7 +168,7 @@ const AttendanceManager: React.FC = () => {
     setErrorMessage(null);
     setFormData({
       employee_id: '',
-      date: getLocalDateString(),
+      work_date: getLocalDateString(),
       time_in: defaultTimeIn,
       time_out: defaultTimeOut
     });
@@ -183,10 +182,10 @@ const AttendanceManager: React.FC = () => {
     }
   };
 
-  const calculateHours = (date: string, start: string, end: string | null) => {
+  const calculateHours = (workDate: string, start: string, end: string | null) => {
     if (!end) return 0;
-    const startTime = new Date(`${date}T${start}`);
-    const endTime = new Date(`${date}T${end}`);
+    const startTime = new Date(`${workDate}T${start}`);
+    const endTime = new Date(`${workDate}T${end}`);
     let diff = endTime.getTime() - startTime.getTime();
     if (diff < 0) diff += 24 * 60 * 60 * 1000;
     return Math.max(0, diff / (1000 * 60 * 60));
@@ -204,8 +203,6 @@ const AttendanceManager: React.FC = () => {
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '---';
-    // dateStr is assumed to be YYYY-MM-DD. 
-    // We parse and display as MMM DD, YYYY (e.g. Jan 12, 2026) using UTC to prevent shifts.
     const [year, month, day] = dateStr.split('-').map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.toLocaleDateString('en-US', {
@@ -271,8 +268,8 @@ const AttendanceManager: React.FC = () => {
                     type="date"
                     required
                     className={inputClasses}
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                    value={formData.work_date}
+                    onChange={(e) => setFormData({...formData, work_date: e.target.value})}
                   />
                 </div>
               </div>
@@ -345,7 +342,7 @@ const AttendanceManager: React.FC = () => {
               </div>
               <div>
                 <label className={labelClasses}>Date</label>
-                <input type="date" required className={inputClasses} value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
+                <input type="date" required className={inputClasses} value={formData.work_date} onChange={(e) => setFormData({...formData, work_date: e.target.value})} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -422,9 +419,9 @@ const AttendanceManager: React.FC = () => {
                   <tr><td colSpan={6} className="px-6 py-10 text-center text-gray-400 text-xs font-bold italic">No records found.</td></tr>
                 ) : (
                   filteredAttendance.map((record) => {
-                    const hours = calculateHours(record.date, record.time_in, record.time_out);
+                    const hours = calculateHours(record.work_date, record.time_in, record.time_out);
                     return (
-                      <tr key={`${record.id}-${record.date}`} className="hover:bg-blue-50/5 transition-colors group">
+                      <tr key={`${record.id}-${record.work_date}`} className="hover:bg-blue-50/5 transition-colors group">
                         <td className="px-6 py-3">
                           <button 
                             onClick={() => setFilterEmployeeId(record.employee_id)}
@@ -440,7 +437,7 @@ const AttendanceManager: React.FC = () => {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="text-[11px] font-bold text-gray-700 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">
-                            {formatDateDisplay(record.date)}
+                            {formatDateDisplay(record.work_date)}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">

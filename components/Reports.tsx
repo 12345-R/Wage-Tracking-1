@@ -25,9 +25,9 @@ const Reports: React.FC = () => {
     let query = supabase
       .from('attendance')
       .select('*, employee:employees(*)')
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('date', { ascending: false });
+      .gte('work_date', startDate)
+      .lte('work_date', endDate)
+      .order('work_date', { ascending: false });
 
     if (selectedEmployeeId !== 'all') {
       query = query.eq('employee_id', selectedEmployeeId);
@@ -39,10 +39,10 @@ const Reports: React.FC = () => {
     setLoading(false);
   };
 
-  const calculateHours = (date: string, start: string, end: string | null) => {
+  const calculateHours = (workDate: string, start: string, end: string | null) => {
     if (!end) return 0;
-    const startTime = new Date(`${date}T${start}`);
-    const endTime = new Date(`${date}T${end}`);
+    const startTime = new Date(`${workDate}T${start}`);
+    const endTime = new Date(`${workDate}T${end}`);
     let diff = endTime.getTime() - startTime.getTime();
     if (diff < 0) diff += 24 * 60 * 60 * 1000;
     return Math.max(0, diff / (1000 * 60 * 60));
@@ -53,7 +53,7 @@ const Reports: React.FC = () => {
     attendance.forEach(record => {
       if (!record.employee) return;
       const id = record.employee_id;
-      const hrs = calculateHours(record.date, record.time_in, record.time_out);
+      const hrs = calculateHours(record.work_date, record.time_in, record.time_out);
       const pay = hrs * record.employee.hourly_rate;
 
       if (!summaryMap[id]) {
@@ -79,9 +79,9 @@ const Reports: React.FC = () => {
       csvContent += `Report for: ${emp?.name || 'Unknown'}\n`;
       csvContent += "Date,In,Out,Hours,Pay (CAD)\n";
       attendance.forEach(att => {
-        const hrs = calculateHours(att.date, att.time_in, att.time_out);
+        const hrs = calculateHours(att.work_date, att.time_in, att.time_out);
         const pay = hrs * (att.employee?.hourly_rate || 0);
-        csvContent += `${att.date},${att.time_in},${att.time_out || '--'},${hrs.toFixed(2)},${pay.toFixed(2)}\n`;
+        csvContent += `${att.work_date},${att.time_in},${att.time_out || '--'},${hrs.toFixed(2)},${pay.toFixed(2)}\n`;
       });
     }
 
@@ -214,11 +214,11 @@ const Reports: React.FC = () => {
                       <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-sm font-bold">No shifts recorded.</td></tr>
                     ) : (
                       attendance.map((att, idx) => {
-                        const hrs = calculateHours(att.date, att.time_in, att.time_out);
+                        const hrs = calculateHours(att.work_date, att.time_in, att.time_out);
                         const pay = hrs * (att.employee?.hourly_rate || 0);
                         return (
                           <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-6 py-4 text-sm font-black text-gray-800">{new Date(att.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}</td>
+                            <td className="px-6 py-4 text-sm font-black text-gray-800">{new Date(att.work_date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}</td>
                             <td className="px-6 py-4 text-center text-[10px] text-gray-400 uppercase font-black">Logged</td>
                             <td className="px-6 py-4 text-center text-sm font-bold text-gray-600">{hrs.toFixed(1)}h</td>
                             <td className="px-6 py-4 text-right font-black text-base text-gray-900">${pay.toFixed(2)}</td>

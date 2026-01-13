@@ -11,7 +11,7 @@ export interface Attendance {
   id: string;
   user_id: string;
   employee_id: string;
-  date: string;
+  work_date: string;
   time_in: string;
   time_out: string | null;
   created_at: string;

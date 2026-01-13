@@ -18,10 +18,10 @@ const Dashboard: React.FC = () => {
     fetchStats();
   }, []);
 
-  const calculateHours = (date: string, start: string, end: string | null) => {
+  const calculateHours = (workDate: string, start: string, end: string | null) => {
     if (!end) return 0;
-    const startTime = new Date(`${date}T${start}`);
-    const endTime = new Date(`${date}T${end}`);
+    const startTime = new Date(`${workDate}T${start}`);
+    const endTime = new Date(`${workDate}T${end}`);
     let diff = endTime.getTime() - startTime.getTime();
     if (diff < 0) diff += 24 * 60 * 60 * 1000;
     return Math.max(0, diff / (1000 * 60 * 60));
@@ -35,7 +35,7 @@ const Dashboard: React.FC = () => {
     const [attRes, empRes] = await Promise.all([
       supabase.from('attendance')
         .select('*, employee:employees(*)')
-        .gte('date', startOfMonth.toISOString().split('T')[0]),
+        .gte('work_date', startOfMonth.toISOString().split('T')[0]),
       supabase.from('employees').select('id', { count: 'exact' })
     ]);
 
@@ -54,11 +54,11 @@ const Dashboard: React.FC = () => {
 
       data.forEach(record => {
         if (!record.time_out || !record.employee) return;
-        const hours = calculateHours(record.date, record.time_in, record.time_out);
+        const hours = calculateHours(record.work_date, record.time_in, record.time_out);
         const wages = hours * record.employee.hourly_rate;
 
-        if (record.date === todayStr) { dHours += hours; dWages += wages; }
-        if (record.date >= weekStr) { wHours += hours; wWages += wages; }
+        if (record.work_date === todayStr) { dHours += hours; dWages += wages; }
+        if (record.work_date >= weekStr) { wHours += hours; wWages += wages; }
         mHours += hours; mWages += wages;
       });
 
@@ -94,7 +94,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Primary KPI Section - Smaller & Colored */}
+      {/* Primary KPI Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-emerald-50 p-6 rounded-[24px] border border-emerald-200 shadow-sm group hover:shadow-md transition-all">
           <div className="flex justify-between items-center mb-4">
@@ -159,7 +159,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Earners - Refined & Colorful */}
+      {/* Top Earners */}
       <div className="bg-white rounded-[32px] border border-gray-200 overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -178,7 +178,7 @@ const Dashboard: React.FC = () => {
                 if (!curr.employee) return acc;
                 const id = curr.employee_id;
                 if (!acc[id]) acc[id] = { name: curr.employee.name, hours: 0, wages: 0, rate: curr.employee.hourly_rate };
-                const hrs = calculateHours(curr.date, curr.time_in, curr.time_out);
+                const hrs = calculateHours(curr.work_date, curr.time_in, curr.time_out);
                 acc[id].hours += hrs;
                 acc[id].wages += hrs * curr.employee.hourly_rate;
                 return acc;
