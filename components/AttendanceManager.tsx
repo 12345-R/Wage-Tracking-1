@@ -49,8 +49,7 @@ const AttendanceManager: React.FC = () => {
       
       if (empRes.data) setEmployees(empRes.data);
       if (attRes.data) {
-        // Replace existing state completely with fresh data from DB
-        setAttendance([...attRes.data]);
+        setAttendance(attRes.data);
       }
     } catch (err) {
       console.error("Fetch failed:", err);
@@ -73,17 +72,18 @@ const AttendanceManager: React.FC = () => {
       return;
     }
 
-    const formattedDate = formData.date; // already YYYY-MM-DD from input
+    // Capture the edited date string directly from the input (YYYY-MM-DD)
+    const rawDateValue = formData.date;
     const timeIn = formData.time_in;
     const timeOut = formData.time_out || null;
 
     try {
-      // Check for duplicates (same person, same date, same start time)
+      // Duplicate check: only flag if it's a DIFFERENT record with the same unique keys
       const { data: existing } = await supabase
         .from('attendance')
         .select('id')
         .eq('employee_id', formData.employee_id)
-        .eq('date', formattedDate)
+        .eq('date', rawDateValue)
         .eq('time_in', timeIn);
 
       const isDuplicate = existing?.some(record => !editingRecord || record.id !== editingRecord.id);
@@ -94,34 +94,36 @@ const AttendanceManager: React.FC = () => {
         return;
       }
 
+      const updatePayload = {
+        employee_id: formData.employee_id,
+        date: rawDateValue, // Raw YYYY-MM-DD string
+        time_in: timeIn,
+        time_out: timeOut,
+        user_id: user.id
+      };
+
       if (editingRecord) {
+        // Explicit UPDATE targeting the specific record ID
         const { error: updateError } = await supabase
           .from('attendance')
           .update({
-            employee_id: formData.employee_id,
-            date: formattedDate,
-            time_in: timeIn,
-            time_out: timeOut
+            employee_id: updatePayload.employee_id,
+            date: updatePayload.date,
+            time_in: updatePayload.time_in,
+            time_out: updatePayload.time_out
           })
           .eq('id', editingRecord.id)
           .eq('user_id', user.id);
         
         if (updateError) throw updateError;
         
-        // Close modal first to clear editing state
         closeModal();
-        // Force refresh all data from Supabase
         await fetchData();
       } else {
+        // Standard INSERT for new records
         const { error: insertError } = await supabase
           .from('attendance')
-          .insert([{
-            employee_id: formData.employee_id,
-            date: formattedDate,
-            time_in: timeIn,
-            time_out: timeOut,
-            user_id: user.id
-          }]);
+          .insert([updatePayload]);
         
         if (insertError) throw insertError;
         
@@ -149,6 +151,7 @@ const AttendanceManager: React.FC = () => {
 
     const formatDateForInput = (dateStr: string) => {
       if (!dateStr) return '';
+      // If it's an ISO timestamp, extract just the date part for the input
       return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
     };
     
@@ -201,7 +204,8 @@ const AttendanceManager: React.FC = () => {
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '---';
-    // dateStr is YYYY-MM-DD. Split to avoid timezone shift from local Date constructor.
+    // dateStr is assumed to be YYYY-MM-DD. 
+    // We parse and display as MMM DD, YYYY (e.g. Jan 12, 2026) using UTC to prevent shifts.
     const [year, month, day] = dateStr.split('-').map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.toLocaleDateString('en-US', {
