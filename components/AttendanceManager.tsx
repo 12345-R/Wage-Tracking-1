@@ -37,18 +37,26 @@ const AttendanceManager: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [empRes, attRes] = await Promise.all([
-      supabase.from('employees').select('*').order('name'),
-      supabase.from('attendance')
-        .select('*, employee:employees(*)')
-        .order('date', { ascending: false })
-        .order('time_in', { ascending: false })
-        .limit(100)
-    ]);
-    
-    if (empRes.data) setEmployees(empRes.data);
-    if (attRes.data) setAttendance(attRes.data);
-    setLoading(false);
+    try {
+      const [empRes, attRes] = await Promise.all([
+        supabase.from('employees').select('*').order('name'),
+        supabase.from('attendance')
+          .select('*, employee:employees(*)')
+          .order('date', { ascending: false })
+          .order('time_in', { ascending: false })
+          .limit(100)
+      ]);
+      
+      if (empRes.data) setEmployees(empRes.data);
+      if (attRes.data) {
+        // Replace existing state completely with fresh data from DB
+        setAttendance([...attRes.data]);
+      }
+    } catch (err) {
+      console.error("Fetch failed:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,14 +73,12 @@ const AttendanceManager: React.FC = () => {
       return;
     }
 
-    // Ensure date is formatted correctly (YYYY-MM-DD)
-    // HTML5 date inputs return YYYY-MM-DD already, but we ensure it's a clean string
-    const formattedDate = formData.date;
+    const formattedDate = formData.date; // already YYYY-MM-DD from input
     const timeIn = formData.time_in;
     const timeOut = formData.time_out || null;
 
     try {
-      // Duplicate check: only flag if it's a DIFFERENT record with the same unique keys
+      // Check for duplicates (same person, same date, same start time)
       const { data: existing } = await supabase
         .from('attendance')
         .select('id')
@@ -83,13 +89,12 @@ const AttendanceManager: React.FC = () => {
       const isDuplicate = existing?.some(record => !editingRecord || record.id !== editingRecord.id);
 
       if (isDuplicate) {
-        setErrorMessage("A shift with this exact start time already exists for this employee on this date.");
+        setErrorMessage("A shift with this start time already exists for this employee on this date.");
         setIsLogging(false);
         return;
       }
 
       if (editingRecord) {
-        // Explicit UPDATE targeting the specific record ID
         const { error: updateError } = await supabase
           .from('attendance')
           .update({
@@ -103,10 +108,11 @@ const AttendanceManager: React.FC = () => {
         
         if (updateError) throw updateError;
         
-        await fetchData();
+        // Close modal first to clear editing state
         closeModal();
+        // Force refresh all data from Supabase
+        await fetchData();
       } else {
-        // Standard INSERT for new records
         const { error: insertError } = await supabase
           .from('attendance')
           .insert([{
@@ -136,20 +142,14 @@ const AttendanceManager: React.FC = () => {
 
   const openEdit = (record: Attendance) => {
     setErrorMessage(null);
-    
     const parseTime = (timeStr: string | null) => {
       if (!timeStr) return '';
       return timeStr.split(':').slice(0, 2).join(':');
     };
 
-    // Ensure the date is in YYYY-MM-DD format for the input field
     const formatDateForInput = (dateStr: string) => {
       if (!dateStr) return '';
-      // If it includes 'T', it's likely an ISO string, extract the date part
-      if (dateStr.includes('T')) {
-        return dateStr.split('T')[0];
-      }
-      return dateStr;
+      return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
     };
     
     setFormData({
@@ -197,6 +197,19 @@ const AttendanceManager: React.FC = () => {
     const ampm = h >= 12 ? 'PM' : 'AM';
     const displayH = h % 12 || 12;
     return `${displayH}:${m} ${ampm}`;
+  };
+
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return '---';
+    // dateStr is YYYY-MM-DD. Split to avoid timezone shift from local Date constructor.
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC'
+    });
   };
 
   const inputClasses = "w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base font-bold appearance-none transition-all";
@@ -407,7 +420,7 @@ const AttendanceManager: React.FC = () => {
                   filteredAttendance.map((record) => {
                     const hours = calculateHours(record.date, record.time_in, record.time_out);
                     return (
-                      <tr key={record.id} className="hover:bg-blue-50/5 transition-colors group">
+                      <tr key={`${record.id}-${record.date}`} className="hover:bg-blue-50/5 transition-colors group">
                         <td className="px-6 py-3">
                           <button 
                             onClick={() => setFilterEmployeeId(record.employee_id)}
@@ -423,7 +436,7 @@ const AttendanceManager: React.FC = () => {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="text-[11px] font-bold text-gray-700 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">
-                            {new Date(record.date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}
+                            {formatDateDisplay(record.date)}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">
