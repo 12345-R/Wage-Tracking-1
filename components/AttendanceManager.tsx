@@ -213,6 +213,13 @@ const AttendanceManager: React.FC = () => {
     });
   };
 
+  const getDayName = (dateStr: string) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+  };
+
   const inputClasses = "w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none text-base font-bold appearance-none transition-all";
   const labelClasses = "block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1";
 
@@ -436,8 +443,13 @@ const AttendanceManager: React.FC = () => {
                           </button>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <div className="text-[11px] font-bold text-gray-700 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">
-                            {formatDateDisplay(record.work_date)}
+                          <div className="flex flex-col items-center">
+                            <div className="text-[11px] font-bold text-gray-700 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">
+                              {formatDateDisplay(record.work_date)}
+                            </div>
+                            <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                              {getDayName(record.work_date)}
+                            </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">

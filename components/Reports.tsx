@@ -48,6 +48,13 @@ const Reports: React.FC = () => {
     return Math.max(0, diff / (1000 * 60 * 60));
   };
 
+  const getDayName = (dateStr: string) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+  };
+
   const getSummary = () => {
     const summaryMap: Record<string, { id: string, name: string, rate: number, hours: number, wages: number, shifts: number }> = {};
     attendance.forEach(record => {
@@ -218,7 +225,16 @@ const Reports: React.FC = () => {
                         const pay = hrs * (att.employee?.hourly_rate || 0);
                         return (
                           <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-6 py-4 text-sm font-black text-gray-800">{new Date(att.work_date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col">
+                                <span className="text-sm font-black text-gray-800">
+                                  {new Date(att.work_date).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}
+                                </span>
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                                  {getDayName(att.work_date)}
+                                </span>
+                              </div>
+                            </td>
                             <td className="px-6 py-4 text-center text-[10px] text-gray-400 uppercase font-black">Logged</td>
                             <td className="px-6 py-4 text-center text-sm font-bold text-gray-600">{hrs.toFixed(1)}h</td>
                             <td className="px-6 py-4 text-right font-black text-base text-gray-900">${pay.toFixed(2)}</td>
